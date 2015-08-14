@@ -1,0 +1,13 @@
+rootProject.name = 'dependent'
+
+def correctBuildFileName(aProject){
+	String fileBaseName = aProject.name.replaceAll("\\p{Upper}") { "-${it.toLowerCase()}" }
+	aProject.buildFileName = "${fileBaseName}.gradle"
+
+	aProject.children.each { project ->
+		correctBuildFileName(project);
+	}
+}
+
+correctBuildFileName(rootProject);
+

@@ -1,0 +1,145 @@
+apply plugin: 'maven'
+apply plugin: 'java'
+
+description = ''
+
+group = 'no.dependent'
+version = '0.4'
+
+repositories {
+	    maven { url rootProject.getRootDir().toURL().toString()+"build/artifacts/" };
+	    maven { url "http://kamino.local.dbwatch.com:8081/nexus/content/groups/public/" }
+	}
+
+dependencies {
+    compile group: 'org.eclipse.aether', name: 'aether-api', version:'0.9.0.M3'
+    compile group: 'org.eclipse.aether', name: 'aether-spi', version:'0.9.0.M3'
+    compile group: 'org.eclipse.aether', name: 'aether-util', version:'0.9.0.M3'
+    compile group: 'org.eclipse.aether', name: 'aether-impl', version:'0.9.0.M3'
+    compile group: 'org.eclipse.aether', name: 'aether-connector-basic', version:'0.9.0.M3'
+    compile group: 'org.eclipse.aether', name: 'aether-transport-file', version:'0.9.0.M3'
+    compile group: 'org.eclipse.aether', name: 'aether-transport-http', version:'0.9.0.M3'
+    compile group: 'org.apache.maven', name: 'maven-aether-provider', version:'3.1.0'
+    compile(group: 'org.eclipse.sisu', name: 'org.eclipse.sisu.plexus', version:'0.0.0.M3') {
+        exclude(module: 'cdi-api')
+        exclude(module: 'jsr305')
+    }
+    compile(group: 'org.sonatype.sisu', name: 'sisu-guice', version:'3.1.0', classifier:'no_aop') {
+        exclude(module: 'aopalliance')
+        exclude(module: 'sisu-guava')
+    }
+    compile group: 'com.google.guava', name: 'guava', version:'12.0'
+    testCompile group: 'junit', name:'junit', version: '4.11'
+}
+
+buildscript {
+    repositories {
+        maven { url rootProject.getRootDir().toURL().toString()+"build/artifacts/" };
+        maven { url "http://kamino.local.dbwatch.com:8081/nexus/content/groups/public/" }
+    }
+
+    dependencies {
+//        classpath 'genjar:genjar:1.0.2'
+    }
+
+}
+
+task packageTests(type: Jar) {
+  from sourceSets.test.output
+  classifier = 'tests'
+}
+
+artifacts.archives packageTests
+
+
+ant.project.getBuildListeners().firstElement().setMessageOutputLevel(3)
+
+task copyImplementationClasses(type: Copy) {
+    dependsOn compileJava
+    outputs.upToDateWhen {false}
+
+    from 'build/classes/main/no/dependent_implementation'
+    into 'build/classes/main/private/no/dependent_implementation'
+}
+
+task cleanImplementationClasses(type: Delete){
+    dependsOn copyImplementationClasses
+    outputs.upToDateWhen {false}
+    delete 'build/classes/main/no/dependent_implementation'
+}
+
+task packageImplementation {
+    dependsOn cleanImplementationClasses
+
+    doLast {
+        def paths = project.configurations.runtime.asPath
+        paths.split(':').each { dependencyJar ->
+            println "unpacking" + dependencyJar
+
+            ant.unzip(src: dependencyJar,
+                    dest: "build/classes/main/private/",
+                    overwrite: "true")
+        }
+
+    }
+}
+
+task makeImplementationJar(type:Jar){
+    dependsOn packageImplementation
+    classifier = 'implementation'
+    from 'build/package_implementation/'
+}
+
+jar.dependsOn makeImplementationJar
+
+
+jar {
+    manifest {
+        attributes("Main-Class": "no.dependent.DependentMain")
+    }
+}
+artifacts {
+    archives makeImplementationJar
+}
+
+
+install.repositories.mavenInstaller.pom.dependencies.removeAll { true }
+
+def pomFileLocation="dependent/build/poms/pom-default.xml"
+
+/**
+ * Creates pom with dependencies
+ */
+task writeNewPom << {
+    pom {}.writeTo(pomFileLocation)
+}
+
+/**
+ * Reads and Overwrites POM file removing dependencies
+ */
+task cleanPom(dependsOn: writeNewPom) << {
+    def xml = new XmlParser().parse(pomFileLocation)
+    def nodes = []
+    xml.dependencies[0].each {
+        nodes.add(it)
+    }
+    def parrent = nodes.first().parent()
+    nodes.each {
+        parrent.remove(it)
+    }
+    new XmlNodePrinter(new PrintWriter(new FileWriter(pomFileLocation))).print(xml)
+}
+
+install {
+    repositories {
+        mavenDeployer {
+	    repository(url: rootProject.getRootDir().toURL().toString()+"build/artifacts/");
+            pom.whenConfigured {pom ->
+                pom.dependencies.clear()
+            }
+        }
+    }
+}
+
+install.dependsOn cleanPom
+
