@@ -5,6 +5,7 @@ import sun.misc.Resource;
 import sun.misc.URLClassPath;
 
 import java.io.IOException;
+import java.lang.Override;
 import java.lang.reflect.Field;
 import java.net.URL;
 import java.net.URLClassLoader;
@@ -192,4 +193,9 @@ public class PathRewritingClassLoader  extends URLClassLoader {
         return "true".equalsIgnoreCase(sealed);
     }
 
+
+    @Override
+    public URL getResource(String name){
+        return super.getResource(prefix+name);
+    }
 }
