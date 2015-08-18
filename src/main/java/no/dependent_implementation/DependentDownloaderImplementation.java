@@ -29,12 +29,16 @@ import org.eclipse.aether.resolution.DependencyResult;
 import org.eclipse.aether.util.artifact.JavaScopes;
 import org.eclipse.aether.util.filter.DependencyFilterUtils;
 
-public class DependentDownloader {
-	private final RemoteRepositories repos;
+
+import no.dependent.RemoteRepositories;
+import no.dependent.DependentDownloader;
+
+public class DependentDownloaderImplementation implements DependentDownloader {
+	private final RemoteRepositoriesImplementation repos;
 	private final String targetRepo;
 	private final RepositorySystem system = Booter.newRepositorySystem();
-	
-	DependentDownloader(RemoteRepositories repos, String targetRepo){
+
+    DependentDownloaderImplementation(RemoteRepositoriesImplementation repos, String targetRepo){
 		this.repos=repos;
 		this.targetRepo=targetRepo;
 	}

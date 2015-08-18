@@ -5,11 +5,13 @@ import java.util.List;
 
 import no.dependent_implementation.utils.Booter;
 import org.eclipse.aether.repository.RemoteRepository;
+import no.dependent.RemoteRepositories;
+import no.dependent.DependentDownloader;
 
-public class RemoteRepositories {
+public class RemoteRepositoriesImplementation implements RemoteRepositories{
 	final List<RemoteRepository> repos;
 	
-	public RemoteRepositories(String ... urls){
+	public RemoteRepositoriesImplementation(String ... urls){
 		repos=new LinkedList<RemoteRepository>();
 		for (String repoUrl : urls) {
 			repos.add(Booter.newRepository(repoUrl.substring(0, 10) + "..", repoUrl));
@@ -17,9 +19,8 @@ public class RemoteRepositories {
 	}
 	
 	public DependentDownloader local(String targetRepo){
-		return new DependentDownloader(this, targetRepo);
+		return new DependentDownloaderImplementation(this, targetRepo);
 	}
-	
 	
 
 }

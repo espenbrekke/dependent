@@ -12,6 +12,8 @@ public abstract class DependentFactory {
     public abstract DependentLoaderGraph getGraph();
     public abstract DependentTracker getTracker();
 
+    public abstract RemoteRepositories remoteRepositories(String ... urls);
+
     public abstract Class mainClass();
 
     private static DependentFactory factoryImpl=null;
@@ -115,5 +117,7 @@ public abstract class DependentFactory {
             return new File(url.getPath());
         }
     }
+
+
 
 }

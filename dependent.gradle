@@ -4,7 +4,7 @@ apply plugin: 'java'
 description = ''
 
 group = 'no.dependent'
-version = '0.4'
+version = '0.5'
 
 repositories {
 	    maven { url rootProject.getRootDir().toURL().toString()+"build/artifacts/" };
@@ -143,3 +143,7 @@ install {
 
 install.dependsOn cleanPom
 
+
+tasks.withType(JavaCompile){
+    options.warnings = false
+}
