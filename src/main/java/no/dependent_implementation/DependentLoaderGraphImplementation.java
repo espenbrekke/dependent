@@ -50,7 +50,7 @@ class DependentLoaderGraphImplementation implements DependentLoaderGraph{
 			impls=new ArrayList<DependentLoaderImplementation>(loaderMap.values());
 		}
 		for(DependentLoader loader:impls){
-			System.out.println(loader.getArtifact());
+			//System.out.println(loader.getArtifact());
 			visitor.visitLoader(loader);
 		}
 	}
@@ -188,7 +188,7 @@ class DependentLoaderGraphImplementation implements DependentLoaderGraph{
 						nameClassLoader(dependency, theLoader, recursive);
 					}
 				}
-			} catch (ArtifactDescriptorException e) {
+			} catch (Exception e) {
 				e.printStackTrace();
 			}
 		}
@@ -461,6 +461,10 @@ class DependentLoaderGraphImplementation implements DependentLoaderGraph{
         overridingLoaders.add(new Wildcards(what,loader ,files) );
     }
 
+	public void reloadJar(String artifactId){
+		loaderMap.remove(artifactId);
+		enshureJarLoaded(artifactId);
+	}
 
 	public void unifyGroupVersion(String group){
 		unified.add(group);

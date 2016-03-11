@@ -30,7 +30,6 @@ import org.eclipse.aether.util.artifact.JavaScopes;
 import org.eclipse.aether.util.filter.DependencyFilterUtils;
 
 public interface DependentDownloader {
-
     void download(String artifact);
     void downloadFlat(String artifact, String copyToDir);
     File downloadSingle(String artifact, String toDir);

@@ -1,7 +1,9 @@
 package no.dependent_implementation;
 
 import java.io.File;
-import java.util.ArrayList;import java.util.List;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.LinkedList;
 
 import no.dependent_implementation.utils.Booter;
@@ -19,65 +21,40 @@ import org.eclipse.aether.resolution.ArtifactResolutionException;
 import org.eclipse.aether.resolution.ArtifactResult;
 
 public class DependentRepositoryManager {
-	private RepositorySystem system = Booter.newRepositorySystem();
-	
-	RepositorySystemSession session = Booter.newRepositorySystemSession( system, "target/local-repo" );
- //   RemoteRepository repo = Booter.newCentralRepository();
- //   RemoteRepository localrepo = Booter.newLocalRepository();
-   
-    private LinkedList<ArtifactSource> sources=new LinkedList<ArtifactSource>();
-    
-    private static class ArtifactSource{
-
-		public ArtifactSource(String artifactsourceName,
-				String artifactsourceUrl) {
-			this.artifactsourceName=artifactsourceName;
-			this.artifactsourceUrl=artifactsourceUrl;
-			this.repo=Booter.newRepository(artifactsourceName,artifactsourceUrl);
-		}
-		public final String artifactsourceName;
-		public final String artifactsourceUrl;
-		public final RemoteRepository repo;
-    		
-    }
+	private DependentRepository[] repositories={};
     
 	private ArtifactResult resolveArtifact(
-			Artifact artifact) throws ArtifactResolutionException {
-        
-        ArtifactResult artifactResult=null;
-        for (ArtifactSource source : sources) {
-        	try{
-        		artifactResult =resolveArtifact(artifact, source);
-        		if(!artifactResult.isMissing()) return artifactResult;
-        	} catch (Exception e){
-    //    		e.printStackTrace();
-        	}
+			Artifact artifact) throws Exception {
+
+		for(DependentRepository repository:repositories){
+			try{
+				ArtifactResult result=repository.resolveArtifact(artifact);
+				if((result!=null) && (!result.isMissing()))
+					return result;
+			} catch (Exception e){
+				e.printStackTrace();
+			}
 		}
-		return artifactResult;
+
+		throw new Exception("unable to resolve artifact: "+artifact.getArtifactId());
 	}
 
-	private ArtifactResult resolveArtifact(Artifact artifact, ArtifactSource source) throws ArtifactResolutionException {
-        ArtifactRequest artifactRequest = new ArtifactRequest();
-        artifactRequest.setArtifact( artifact );
-        List<RemoteRepository> listOfSingleSource=new ArrayList<RemoteRepository>();
-        listOfSingleSource.add(source.repo);
-        artifactRequest.setRepositories(listOfSingleSource);
-        
-		ArtifactResult artifactResult = system.resolveArtifact( session, artifactRequest );
-		return artifactResult;
-	}
-	
     private ArtifactDescriptorResult getArtifactDescriptor(
-			Artifact artifact) throws ArtifactDescriptorException {
-		ArtifactDescriptorRequest descriptorRequest = new ArtifactDescriptorRequest();
-		descriptorRequest.setArtifact( artifact );
-		
-        for (ArtifactSource source : sources) {
-        	descriptorRequest.addRepository(source.repo);
+			Artifact artifact) throws Exception {
+
+		for(DependentRepository repository:repositories){
+			try{
+				ArtifactResult result=repository.resolveArtifact(artifact);
+				if((result!=null) && (!result.isMissing())){
+					ArtifactDescriptorResult artifactDescriptor=repository.getArtifactDescriptor(artifact);
+					if(artifactDescriptor!=null )
+						return artifactDescriptor;
+				}
+			} catch (Exception e){
+				e.printStackTrace();
+			}
 		}
-                
-		ArtifactDescriptorResult descriptorResult = system.readArtifactDescriptor( session, descriptorRequest );
-		return descriptorResult;
+		throw new Exception("unable to describe artifact: "+artifact.getArtifactId());
 	}
 
 	public Result<File> getLocalFile(Artifact artifact){
@@ -92,7 +69,7 @@ public class DependentRepositoryManager {
 		}
 	}
 
-	public List<Artifact> getDirectDependencies(Artifact artifact) throws ArtifactDescriptorException {
+	public List<Artifact> getDirectDependencies(Artifact artifact) throws Exception {
   //      Artifact artifact = new DefaultArtifact(artifactId );
         ArtifactDescriptorResult descriptorResult = getArtifactDescriptor(artifact);
         List<Dependency> dependencies=descriptorResult.getDependencies();
@@ -118,16 +95,20 @@ public class DependentRepositoryManager {
 			return false;
 		}
 	}
-
+/*
 	public void setLocalRepo(String localRepo) {
 		session = Booter.newRepositorySystemSession( system, localRepo );
 	}
+*/
+	public void addLocalStore(String localStore){
+		DependentRepository[] newArray=Arrays.copyOf(repositories,repositories.length+1) ;
+		newArray[newArray.length-1]=new DependentRepository(new File(localStore), null);
+		repositories=newArray;
+	}
 
-	public void addSource(String artifactsourceName, String artifactsourceUrl) {
-		ArtifactSource newSource=new ArtifactSource(artifactsourceName, artifactsourceUrl);
-
-//		sources.addFirst(newSource);
-		sources.addLast(newSource);
+	public void addSource(String artifactsourceUrl, String localStore) {
+		DependentRepository[] newArray=Arrays.copyOf(repositories,repositories.length+1) ;
+		newArray[newArray.length-1]=new DependentRepository(new File(localStore), artifactsourceUrl);
 	}
 
 }

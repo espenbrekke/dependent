@@ -122,19 +122,16 @@ class DependentMainImplementation {
                     if(sCurrentLine.startsWith("artifactsource")){
                         String artifactsource=sCurrentLine.replaceFirst("artifactsource\\s+", "").replaceAll("\\s+", " ");
                         String[] artifactsourceParts=artifactsource.split("\\s+", 2);
-                        String artifactsourceName="";
                         String artifactsourceUrl="";
+                        String repoPath="";
                         if(artifactsourceParts.length>1){
-                            artifactsourceName=artifactsourceParts[0];
-                            artifactsourceUrl=artifactsourceParts[1];
-                        } else {
                             artifactsourceUrl=artifactsourceParts[0];
+                            repoPath=artifactsourceParts[1];
+                            dependencyManager.addSource(repoPath,artifactsourceUrl);
                         }
-                        dependencyManager.addSource(artifactsourceName,artifactsourceUrl);
                     } else if(sCurrentLine.startsWith("localstore")){
                         String localRepo=sCurrentLine.replaceFirst("localstore", "").replaceAll("\\s+", "");
-                        new File(localRepo).mkdirs();
-                        dependencyManager.setLocalRepo(localRepo);
+                        dependencyManager.addLocalStore(localRepo);
                     } else if(sCurrentLine.startsWith("include")){
                         String withoutInclude=sCurrentLine.replaceFirst("include", "").replaceFirst("\\s+", "");
                         lines.addAll(0,readFileLines(withoutInclude));

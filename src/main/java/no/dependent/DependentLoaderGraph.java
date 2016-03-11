@@ -28,4 +28,6 @@ public interface DependentLoaderGraph {
     public String[] getCompileClasspath(String ... artifactId);
 
 	public void addLoaderVisitor(DependentLoaderVisitor visitor);
+
+	public void reloadJar(String artifactId);
 }
