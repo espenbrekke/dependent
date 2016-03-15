@@ -30,4 +30,7 @@ public interface DependentLoaderGraph {
 	public void addLoaderVisitor(DependentLoaderVisitor visitor);
 
 	public void reloadJar(String artifactId);
+
+	public String[] listRepositories();
+	public String[] listArtifacts(String repository);
 }

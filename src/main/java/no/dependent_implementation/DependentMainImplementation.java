@@ -130,8 +130,14 @@ class DependentMainImplementation {
                             dependencyManager.addSource(repoPath,artifactsourceUrl);
                         }
                     } else if(sCurrentLine.startsWith("localstore")){
-                        String localRepo=sCurrentLine.replaceFirst("localstore", "").replaceAll("\\s+", "");
-                        dependencyManager.addLocalStore(localRepo);
+                        String wothoutLocalstore=sCurrentLine.replaceFirst("localstore\\s+", "");
+                        String[] fileThenName = wothoutLocalstore.split("\\s+", 2);
+                        if(fileThenName.length==2){
+                            dependencyManager.addLocalStore(fileThenName[0],fileThenName[1]);
+                        } else {
+                            dependencyManager.addLocalStore(fileThenName[0],fileThenName[1]);
+                        }
+
                     } else if(sCurrentLine.startsWith("include")){
                         String withoutInclude=sCurrentLine.replaceFirst("include", "").replaceFirst("\\s+", "");
                         lines.addAll(0,readFileLines(withoutInclude));

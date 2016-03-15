@@ -100,15 +100,35 @@ public class DependentRepositoryManager {
 		session = Booter.newRepositorySystemSession( system, localRepo );
 	}
 */
-	public void addLocalStore(String localStore){
+	public void addLocalStore(String localStore, String name){
 		DependentRepository[] newArray=Arrays.copyOf(repositories,repositories.length+1) ;
-		newArray[newArray.length-1]=new DependentRepository(new File(localStore), null);
+		newArray[newArray.length-1]=new DependentRepository(new File(localStore), null, name);
 		repositories=newArray;
 	}
 
 	public void addSource(String artifactsourceUrl, String localStore) {
 		DependentRepository[] newArray=Arrays.copyOf(repositories,repositories.length+1) ;
-		newArray[newArray.length-1]=new DependentRepository(new File(localStore), artifactsourceUrl);
+		newArray[newArray.length-1]=new DependentRepository(new File(localStore), artifactsourceUrl, "");
+	}
+
+
+	public String[] listRepositories(){
+		LinkedList<String> namedRepos=new LinkedList<String>();
+
+		String[] retVal={};
+		for (int i = 0; i < repositories.length; i++) {
+			if(!"".equals(repositories[i].name)) namedRepos.add(repositories[i].name);
+		}
+		return namedRepos.toArray(retVal);
+	}
+	public String[] listArtifacts(String repository){
+		for (int i = 0; i < repositories.length; i++) {
+			if(repository.equals(repositories[i].name)) {
+				return repositories[i].listArtifacts();
+			}
+		}
+
+		return new String[0];
 	}
 
 }

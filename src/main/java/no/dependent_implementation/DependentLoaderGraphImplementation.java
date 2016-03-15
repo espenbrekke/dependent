@@ -444,7 +444,7 @@ class DependentLoaderGraphImplementation implements DependentLoaderGraph{
 	}
 
     public void registerDependency(String from, String to) {
-        System.out.println("dependency "+ from +" "+to);
+        System.out.println("dependency " + from + " " + to);
         extraDependencies.add(from, to);
     }
 
@@ -458,7 +458,7 @@ class DependentLoaderGraphImplementation implements DependentLoaderGraph{
 			i++;
 		}
 		setLoader(loader);
-        overridingLoaders.add(new Wildcards(what,loader ,files) );
+        overridingLoaders.add(new Wildcards(what, loader, files));
     }
 
 	public void reloadJar(String artifactId){
@@ -534,4 +534,12 @@ class DependentLoaderGraphImplementation implements DependentLoaderGraph{
             return FileVisitResult.CONTINUE;
         }
     }
+
+	public String[] listRepositories(){
+		return dependencyManager.listRepositories();
+	}
+	public String[] listArtifacts(String repository){
+		return dependencyManager.listArtifacts(repository);
+	}
+
 }

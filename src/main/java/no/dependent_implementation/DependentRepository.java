@@ -9,16 +9,19 @@ import org.eclipse.aether.resolution.*;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 
 public class DependentRepository {
+    final String name;
     final public File root;
     final public RemoteRepository remoteRepository;
     final public RepositorySystemSession session;
 
     private RepositorySystem system = Booter.newRepositorySystem();
 
-    public DependentRepository(File root, String artifactsourceUrl){
+    public DependentRepository(File root, String artifactsourceUrl,String name){
         this.root=root;
         session= Booter.newRepositorySystemSession(system, root.toString());
 
@@ -28,7 +31,7 @@ public class DependentRepository {
         else {
             remoteRepository= Booter.newRepository("remote-maven", artifactsourceUrl);
         }
-
+        this.name=name;
     }
 
     public ArtifactResult resolveArtifact(Artifact artifact) throws ArtifactResolutionException {
@@ -58,31 +61,35 @@ public class DependentRepository {
         return descriptorResult;
     }
 
-    /*    private ArtifactDescriptorResult getArtifactDescriptor(
-			Artifact artifact) throws ArtifactDescriptorException {
-		ArtifactDescriptorRequest descriptorRequest = new ArtifactDescriptorRequest();
-		descriptorRequest.setArtifact( artifact );
+    public String[] listArtifacts(){
+        List<String> found= listArtifacts("", "", "", root);
+        String[] retVal=new String[found.size()];
+        return found.toArray(retVal);
+    }
+    private List<String> listArtifacts(String group,String prevPrev, String prev,File cursor){
+        if(!"".equals(group)) group=group+".";
+        group=group+prevPrev;
 
-        for (ArtifactSource source : sources) {
-        	descriptorRequest.addRepository(source.repo);
-		}
+        List<String> retval=new LinkedList<String>();
 
-		ArtifactDescriptorResult descriptorResult = system.readArtifactDescriptor( session, descriptorRequest );
-		return descriptorResult;
-	}
-	*/
-
-/*
-    private ArtifactResult searchLocal(ArtifactRequest artifactRequest){
-        ArtifactResult result=new ArtifactResult(artifactRequest);
-        Artifact artifact=artifactRequest.getArtifact();
-        String artifactDirString=artifact.getGroupId().replace('.','/')+"/"+artifact.getArtifactId()+'/'+artifact.getVersion();
-        File artifactDir=new File(root, artifactDirString);
-        if(artifactDir.exists() && artifactDir.isDirectory()){
-            if("jar".equals(artifact.getExtension())){
-
+        if(cursor.exists()){
+            if(cursor.isDirectory()){
+                File[] contains=cursor.listFiles();
+                for(File sub:contains){
+                    List<String> found=listArtifacts(group, prev,sub.getName(),sub);
+                    retval.addAll(found);
+                }
+            } else {
+                String fileName=cursor.getName();
+                String artifactName=prevPrev+"-"+prev;
+                String artifactType=fileName.replaceFirst(artifactName+".","");
+                if(fileName.startsWith(artifactName)){
+                    retval.add(group+":"+prevPrev+":"+artifactType+":"+prev);
+                }
             }
         }
-        return result;
-    }*/
+
+        return retval;
+    }
+
 }
