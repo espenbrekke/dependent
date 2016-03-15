@@ -3,6 +3,7 @@ package no.dependent;
 import java.io.File;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.util.Set;
 
 public abstract class DependentLoader extends URLClassLoader {
     public DependentLoader(URL[] urls, ClassLoader parent){
@@ -28,4 +29,6 @@ public abstract class DependentLoader extends URLClassLoader {
 
     public abstract String getArtifact();
     public abstract void extractTo(File target);
+
+    public abstract Set<String> getEntries();
 }

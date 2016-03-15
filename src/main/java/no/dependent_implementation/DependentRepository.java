@@ -62,28 +62,37 @@ public class DependentRepository {
     }
 
     public String[] listArtifacts(){
-        List<String> found= listArtifacts("", "", "", root);
-        String[] retVal=new String[found.size()];
-        return found.toArray(retVal);
+        LinkedList<String> retVal=new LinkedList<String>();
+        File[] contains=root.listFiles();
+        for(File sub:contains){
+            if(sub.isDirectory()){
+                List<String> found=listArtifacts("", "","",sub);
+                retVal.addAll(found);
+            }
+        }
+        return retVal.toArray(new String[retVal.size()]);
     }
+
     private List<String> listArtifacts(String group,String prevPrev, String prev,File cursor){
-        if(!"".equals(group)) group=group+".";
-        group=group+prevPrev;
+
 
         List<String> retval=new LinkedList<String>();
 
         if(cursor.exists()){
             if(cursor.isDirectory()){
+                if(!"".equals(group)) group=group+".";
+                group=group+prevPrev;
+
                 File[] contains=cursor.listFiles();
                 for(File sub:contains){
-                    List<String> found=listArtifacts(group, prev,sub.getName(),sub);
+                    List<String> found=listArtifacts(group, prev,cursor.getName(),sub);
                     retval.addAll(found);
                 }
             } else {
                 String fileName=cursor.getName();
                 String artifactName=prevPrev+"-"+prev;
                 String artifactType=fileName.replaceFirst(artifactName+".","");
-                if(fileName.startsWith(artifactName)){
+                if(fileName.startsWith(artifactName) && !artifactType.contains("sha") && !artifactType.contains("pom")){
                     retval.add(group+":"+prevPrev+":"+artifactType+":"+prev);
                 }
             }
