@@ -31,9 +31,7 @@ public class DependentRepositoryManager {
 				ArtifactResult result=repository.resolveArtifact(artifact);
 				if((result!=null) && (!result.isMissing()))
 					return result;
-			} catch (Exception e){
-				e.printStackTrace();
-			}
+			} catch (Exception e){}
 		}
 
 		throw new Exception("unable to resolve artifact: "+artifact.getArtifactId());
@@ -51,7 +49,6 @@ public class DependentRepositoryManager {
 						return artifactDescriptor;
 				}
 			} catch (Exception e){
-				e.printStackTrace();
 			}
 		}
 		throw new Exception("unable to describe artifact: "+artifact.getArtifactId());

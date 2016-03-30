@@ -14,6 +14,8 @@ public abstract class DependentFactory {
 
     public abstract RemoteRepositories remoteRepositories(String ... urls);
 
+    public abstract void executeScript(String[] script,String[] mainParams);
+
     public abstract Class mainClass();
 
     private static DependentFactory factoryImpl=null;

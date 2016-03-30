@@ -27,45 +27,24 @@ class DependentMainImplementation {
             }
         }
 
+
 //		loaderGraph.nameClassLoader("no.dbwatch:dependent:jar:11.1.4", DependentMain.class.getClassLoader(), true);
         Thread.currentThread().setContextClassLoader(new DbWatchDeligatingLoader(DependentMain.class.getClassLoader()));
 
-        List<ToRun> methodsToRun=readConfig(configFileName);
+        List<String> configFileContent=readFileLines(configFileName);
+        executeScript(configFileContent, args);
+        //	loaderGraph.logGraph();
+    }
+
+    public static void executeScript(List<String> script, String[] args){
+        List<ToRun> methodsToRun=readConfig(script);
 
         for (ToRun methodToRun : methodsToRun) {
             methodToRun.mainParams=args;
             methodToRun.run();
         }
-        //	loaderGraph.logGraph();
-    }
+    };
 
-    private static class ToRun{
-        public ToRun(String method, DependentLoader loader){
-            this.loader=(DependentLoaderImplementation)loader;
-            this.method=method;
-
-            assert method!=null;
-            assert loader!=null;
-        }
-        public String[] mainParams;
-        public final DependentLoaderImplementation loader;
-        public final String method;
-        public void run() {
-            try {
-                int lastDotIndex=method.lastIndexOf(".");
-                String methodClass = method.substring(0,lastDotIndex);
-                String methodName = method.substring(lastDotIndex+1);
-
-                Class<?> classToRun=loader.loadClass(methodClass);
-                Method methodToRun=classToRun.getMethod(methodName, String[].class);
-                methodToRun.invoke(null, (Object)mainParams);
-
-            } catch (Throwable e) {
-                e.printStackTrace();
-            }
-        }
-
-    }
 
     private static List<String> readFileLines(String fileName){
         File file=new File(fileName);
@@ -88,7 +67,7 @@ class DependentMainImplementation {
 
     static PropertiesEngine props=new PropertiesEngine();
 
-    private static List<ToRun> readConfig(String configFileName){
+    private static List<ToRun> readConfig(List<String> configFileContent){
         PrintStream sysOut=System.out;
         ByteArrayOutputStream tmpSysOut=new ByteArrayOutputStream();
         System.setOut(new PrintStream(tmpSysOut));
@@ -110,7 +89,7 @@ class DependentMainImplementation {
             br = new BufferedReader(reader);*/
 
             LinkedList<String> lines=new LinkedList<>();
-            lines.addAll(readFileLines(configFileName));
+            lines.addAll(configFileContent);
 
 
             while (!lines.isEmpty())

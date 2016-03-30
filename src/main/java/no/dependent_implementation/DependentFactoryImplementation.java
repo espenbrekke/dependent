@@ -1,9 +1,9 @@
 package no.dependent_implementation;
 
-import no.dependent.DependentFactory;
-import no.dependent.ResourceFile;
-import no.dependent.RemoteRepositories;
-import no.dependent.DependentDownloader;
+import no.dependent.*;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class DependentFactoryImplementation extends DependentFactory {
     final ClassLoader parentLoader;
@@ -28,4 +28,12 @@ public class DependentFactoryImplementation extends DependentFactory {
     public RemoteRepositories remoteRepositories(String ... urls){
         return new RemoteRepositoriesImplementation(urls);
     }
+
+    public void executeScript(String[] script,String[] mainParams){
+        ArrayList<String> scriptAsList=new ArrayList<String>();
+        for (int i = 0; i < script.length; i++) {
+            scriptAsList.add(script[i]);
+        }
+        DependentMainImplementation.executeScript(scriptAsList, mainParams);
+    };
 }

@@ -25,7 +25,7 @@ public class Booter
         try {
             logFile = new PrintStream(proxy);
         } catch (Exception e){
-            e.printStackTrace();
+            //e.printStackTrace();
         }
     }
     public static void setLogFilePlacement(File placement) {
@@ -34,7 +34,7 @@ public class Booter
             proxy.setTarget(new FileOutputStream(new File(logPlacement, "dependent.log")));
 
         } catch (Exception e){
-            e.printStackTrace();
+            //e.printStackTrace();
         }
     }
 
