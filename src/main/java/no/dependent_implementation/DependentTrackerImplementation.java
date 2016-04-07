@@ -31,7 +31,7 @@ class DependentTrackerImplementation implements no.dependent.DependentTracker {
                                 try {
                                     DependentTrackerImplementation.get().signalChange(watcher, DependentTrackerChangeDescription.changed);
                                 } catch (Throwable e) {
-                                    e.printStackTrace();
+                                    DependentMainImplementation.report(e);
                                 }
                             }
 
@@ -47,7 +47,7 @@ class DependentTrackerImplementation implements no.dependent.DependentTracker {
                     }
 
                 } catch (Throwable e){
-                    e.printStackTrace();
+                    DependentMainImplementation.report(e);
                 }
             }
         }
@@ -59,7 +59,7 @@ class DependentTrackerImplementation implements no.dependent.DependentTracker {
                 watcherService = FileSystems.getDefault().newWatchService();
                 whatchTread.start();
             } catch (Exception e){
-                e.printStackTrace();
+                DependentMainImplementation.report(e);
             }
         }
         return watcherService;
@@ -109,7 +109,7 @@ class DependentTrackerImplementation implements no.dependent.DependentTracker {
                         whatch(path, filter);
                     }
                 } catch (Exception e){
-                    e.printStackTrace();
+                    DependentMainImplementation.report(e);
                 }
             }
         }
@@ -239,7 +239,7 @@ class DependentTrackerImplementation implements no.dependent.DependentTracker {
                 }
             });
         } catch (Exception e){
-            e.printStackTrace();
+            DependentMainImplementation.report(e);
         }
         return watchKeys;
     };

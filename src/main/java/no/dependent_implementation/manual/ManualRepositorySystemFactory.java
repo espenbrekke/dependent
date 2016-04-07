@@ -1,5 +1,6 @@
 package no.dependent_implementation.manual;
 
+import no.dependent_implementation.DependentMainImplementation;
 import org.apache.maven.repository.internal.MavenRepositorySystemUtils;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.connector.basic.BasicRepositoryConnectorFactory;
@@ -33,7 +34,7 @@ public class ManualRepositorySystemFactory
             @Override
             public void serviceCreationFailed( Class<?> type, Class<?> impl, Throwable exception )
             {
-                exception.printStackTrace();
+                DependentMainImplementation.report(exception);
             }
         } );
 

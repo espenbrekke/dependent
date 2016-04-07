@@ -18,6 +18,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import no.dependent_implementation.DependentMainImplementation;
 import org.eclipse.aether.transfer.AbstractTransferListener;
 import org.eclipse.aether.transfer.MetadataNotFoundException;
 import org.eclipse.aether.transfer.TransferEvent;
@@ -143,7 +144,7 @@ public class ConsoleTransferListener
 
         if ( !( event.getException() instanceof MetadataNotFoundException ) )
         {
-            event.getException().printStackTrace( out );
+            DependentMainImplementation.report(event.getException(),out);
         }
     }
 
@@ -159,7 +160,7 @@ public class ConsoleTransferListener
 
     public void transferCorrupted( TransferEvent event )
     {
-        event.getException().printStackTrace( out );
+        DependentMainImplementation.report(event.getException(),out);
     }
 
     protected long toKB( long bytes )

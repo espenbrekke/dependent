@@ -60,7 +60,7 @@ class DependentLoaderGraphImplementation implements DependentLoaderGraph{
 			try {
 				v.visitLoader(theLoader);
 			} catch (Throwable e){
-				e.printStackTrace();
+				DependentMainImplementation.report(e);
 			}
 		}
 	}
@@ -189,7 +189,7 @@ class DependentLoaderGraphImplementation implements DependentLoaderGraph{
 					}
 				}
 			} catch (Exception e) {
-				e.printStackTrace();
+				DependentMainImplementation.report(e);
 			}
 		}
 		visitLoader(theLoader);
@@ -297,8 +297,7 @@ class DependentLoaderGraphImplementation implements DependentLoaderGraph{
 			visitLoader(theLoader);
 			return theLoader;
 		} catch (Exception e) {
-			e.printStackTrace(Booter.logFile);
-
+			DependentMainImplementation.report(e, Booter.logFile);
 			return theLoader;
 		}
 		//return null;
@@ -330,7 +329,6 @@ class DependentLoaderGraphImplementation implements DependentLoaderGraph{
 		// Fetch jar and dependencies.
 		try {
 			Result<File> localFileName=dependencyManager.getLocalFile(artifactId);
-			
 			List<Artifact> dependencies=dependencyManager.getDirectDependencies(artifactId);
 			
 			int i=0;
@@ -340,7 +338,7 @@ class DependentLoaderGraphImplementation implements DependentLoaderGraph{
 				}
 			}
 		} catch (Exception e) {
-			e.printStackTrace();
+			DependentMainImplementation.report(e);
 		}
 	}
 		
@@ -361,7 +359,7 @@ class DependentLoaderGraphImplementation implements DependentLoaderGraph{
 			writer.println("}");
 			writer.close();
 		} catch (Exception e) {
-			e.printStackTrace();
+			DependentMainImplementation.report(e);
 		}
 	}
 	
@@ -477,7 +475,7 @@ class DependentLoaderGraphImplementation implements DependentLoaderGraph{
             try {
                 Files.walkFileTree(archiveFile.toPath(), new CopyDirVisitor(archiveFile,destination));
             } catch (Exception e){
-                e.printStackTrace();
+				DependentMainImplementation.report(e);
             }
 
         } else if(archiveFile.getName().endsWith("jar")) {

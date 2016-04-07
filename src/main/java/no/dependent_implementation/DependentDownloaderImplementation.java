@@ -68,14 +68,9 @@ public class DependentDownloaderImplementation implements DependentDownloader {
 			DependencyResult resolvedDependencies=system.resolveDependencies( session, dependencyRequest );
 			assertNotNull(resolvedDependencies,"resolvedDependencies is null");
 			artifactResults = resolvedDependencies.getArtifactResults();
-		
-/*			for ( ArtifactResult artifactResult : artifactResults )
-			{
-				System.out.println( artifactResult.getArtifact() + " resolved to " + artifactResult.getArtifact().getFile() );
-			}
-			*/
+
 		} catch (DependencyResolutionException e) {
-			e.printStackTrace();
+            DependentMainImplementation.report(e);
 		}
 	}
 	
@@ -113,9 +108,9 @@ public class DependentDownloaderImplementation implements DependentDownloader {
 				Files.copy(from.toPath(), to.toPath(), StandardCopyOption.REPLACE_EXISTING);
 			}
 		} catch (DependencyResolutionException e) {
-			e.printStackTrace();
+            DependentMainImplementation.report(e);
 		} catch (IOException e) {
-			e.printStackTrace();
+            DependentMainImplementation.report(e);
 		}
 	}
 
@@ -176,10 +171,9 @@ public class DependentDownloaderImplementation implements DependentDownloader {
             if(!"".equals(whileDoing)){
                 System.out.println("While: "+whileDoing);
             }
-			e.printStackTrace();
+            DependentMainImplementation.report(e);
 		} catch (Exception e) {
-			e.printStackTrace();
-		}
+            DependentMainImplementation.report(e);		}
 		return null;
 	}
 	
@@ -210,9 +204,9 @@ public class DependentDownloaderImplementation implements DependentDownloader {
             if(!"".equals(whileDoing)){
                 System.out.println("While: "+whileDoing);
             }
-            e.printStackTrace();
+            DependentMainImplementation.report(e);
         } catch (Exception e) {
-            e.printStackTrace();
+            DependentMainImplementation.report(e);
         }
         return null;
     }
@@ -248,7 +242,7 @@ public class DependentDownloaderImplementation implements DependentDownloader {
             zipFile.close();
         }
         catch (Exception e) {
-            e.printStackTrace();
+            DependentMainImplementation.report(e);
         }
 
 

@@ -61,6 +61,7 @@ public class ResourceFileImplementation implements ResourceFile {
 		try {
 			return new FileInputStream(theFile);
 		} catch (FileNotFoundException e) {
+			DependentMainImplementation.report(e);
 			//e.printStackTrace();
 		}
 		return null;

@@ -38,7 +38,7 @@ class ToRun{
             methodToRun.invoke(null, (Object)mainParams);
 
         } catch (Throwable e) {
-            e.printStackTrace();
+            DependentMainImplementation.report(e);
         }
     }
 

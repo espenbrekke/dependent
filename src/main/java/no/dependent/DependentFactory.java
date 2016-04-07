@@ -50,30 +50,6 @@ public abstract class DependentFactory {
             _dependentClassLoader=new PathRewritingClassLoader("private",(URLClassLoader)DependentFactory.class.getClassLoader());
             return _dependentClassLoader;
         }
-
-/*        try{
-            ClassLoader thisLoader=DependentFactory.class.getClassLoader();
-
-            File jarFile=getJarFile(DependentFactory.class);
-            System.out.println(jarFile);
-            File containingDir=jarFile.getParentFile();
-            System.out.println(containingDir);
-
-            String implementationName=jarFile.getName().replace(".jar","-implementation.jar");
-            System.out.println(implementationName);
-            File implementationJarFile=new File(containingDir,implementationName);
-            System.out.println(implementationJarFile);
-
-            URL[] dependent={implementationJarFile.toURI().toURL()};
-//            _dependentClassLoader=new URLClassLoader(dependent);
-            _dependentClassLoader=new URLClassLoader(dependent,DependentFactory.class.getClassLoader());
-            return _dependentClassLoader;
-        } catch(Throwable ee){
-            System.err.println("Fatal error:");
-            ee.printStackTrace();
-            return null;
-        }
-        */
         return null;
     }
 

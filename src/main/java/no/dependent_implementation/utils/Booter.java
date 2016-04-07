@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.PrintStream;
 
+import no.dependent_implementation.DependentMainImplementation;
 import no.dependent_implementation.manual.ManualRepositorySystemFactory;
 
 import org.apache.maven.repository.internal.MavenRepositorySystemUtils;

@@ -45,7 +45,7 @@ class DependentLoaderImplementation extends DependentLoader {
                 outputStream.close();
                 inputStream.close();
             } catch (Throwable e){
-                e.printStackTrace();
+                DependentMainImplementation.report(e);
             }
 
         }
@@ -85,7 +85,7 @@ class DependentLoaderImplementation extends DependentLoader {
                     try {
                         Files.walkFileTree(asFile.toPath(), new AddStringVisitor(asFile, newEntries));
                     } catch (Exception e){
-                        e.printStackTrace();
+                        DependentMainImplementation.report(e);
                     }
                 } else if(asFile.exists() && asFile.getName().endsWith(".jar")){
                     ZipFile zipFile = null;

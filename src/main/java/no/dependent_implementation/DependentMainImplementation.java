@@ -15,7 +15,7 @@ import java.util.List;
 /**
  * Created by espen on 11/26/14.
  */
-class DependentMainImplementation {
+public class DependentMainImplementation {
     private static DependentLoaderGraphImplementation loaderGraph=(DependentLoaderGraphImplementation)DependentFactory.get().getGraph();// DependentLoaderGraphImplementation.create(dependencyManager, DependentMain.class.getClassLoader());
     private static DependentRepositoryManager dependencyManager=loaderGraph.dependencyManager;
 
@@ -181,7 +181,7 @@ class DependentMainImplementation {
                             try{
                                 run.run();
                             } catch (Throwable t){
-                                t.printStackTrace();
+                                DependentMainImplementation.report(t);
                                 success=false;
                             }
                         }
@@ -237,7 +237,7 @@ class DependentMainImplementation {
                     br.close();
             } catch (IOException ex)
             {
-                ex.printStackTrace(Booter.logFile);
+                DependentMainImplementation.report(ex);
             }
         }
         return success;
@@ -275,4 +275,28 @@ class DependentMainImplementation {
         }
         return what;
     }
+
+
+    public static void report(String preMessage, Throwable e){
+        Booter.logFile.println(preMessage);
+        report(e,Booter.logFile);
+    };
+    public static void report(Throwable e){
+        report(e,Booter.logFile);
+    };
+    public static void report(Throwable e, PrintStream reportTo){
+        Throwable cause = null;
+        Throwable result = e;
+
+        while(null != (cause = result.getCause())  && (result != cause) ) {
+            result = cause;
+        }
+
+        if(e!=result){
+            reportTo.println(e.getMessage());
+            reportTo.println(result.getMessage());
+        } else {
+            reportTo.println(e.getMessage());
+        }
+    };
 }
