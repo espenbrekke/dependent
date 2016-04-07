@@ -132,6 +132,7 @@ public class DependentMainImplementation {
                     } else if(sCurrentLine.startsWith("noredirect")){
                         System.setOut(sysOut);
                         System.setErr(sysErr);
+                        Booter.logFile=System.out;
                     } else if(sCurrentLine.startsWith("redirect")){
                         String withoutRedirect=sCurrentLine.replaceFirst("redirect", "").replaceFirst("\\s+", "");
                         String[] streamNameValue = withoutRedirect.split("\\s",2);
