@@ -10,7 +10,6 @@ import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
-import no.dependent.DependentLoaderGraph;
 import no.dependent_implementation.utils.Booter;
 
 import org.eclipse.aether.RepositorySystem;
@@ -31,7 +30,6 @@ import org.eclipse.aether.util.artifact.JavaScopes;
 import org.eclipse.aether.util.filter.DependencyFilterUtils;
 
 
-import no.dependent.RemoteRepositories;
 import no.dependent.DependentDownloader;
 
 public class DependentDownloaderImplementation implements DependentDownloader {
@@ -70,7 +68,7 @@ public class DependentDownloaderImplementation implements DependentDownloader {
 			artifactResults = resolvedDependencies.getArtifactResults();
 
 		} catch (DependencyResolutionException e) {
-            DependentMainImplementation.report(e);
+            DependentMainImplementation.reportError(e);
 		}
 	}
 	
@@ -108,9 +106,9 @@ public class DependentDownloaderImplementation implements DependentDownloader {
 				Files.copy(from.toPath(), to.toPath(), StandardCopyOption.REPLACE_EXISTING);
 			}
 		} catch (DependencyResolutionException e) {
-            DependentMainImplementation.report(e);
+            DependentMainImplementation.reportError(e);
 		} catch (IOException e) {
-            DependentMainImplementation.report(e);
+            DependentMainImplementation.reportError(e);
 		}
 	}
 
@@ -171,9 +169,9 @@ public class DependentDownloaderImplementation implements DependentDownloader {
             if(!"".equals(whileDoing)){
                 System.out.println("While: "+whileDoing);
             }
-            DependentMainImplementation.report(e);
+            DependentMainImplementation.reportError(e);
 		} catch (Exception e) {
-            DependentMainImplementation.report(e);		}
+            DependentMainImplementation.reportError(e);		}
 		return null;
 	}
 	
@@ -204,9 +202,9 @@ public class DependentDownloaderImplementation implements DependentDownloader {
             if(!"".equals(whileDoing)){
                 System.out.println("While: "+whileDoing);
             }
-            DependentMainImplementation.report(e);
+            DependentMainImplementation.reportError(e);
         } catch (Exception e) {
-            DependentMainImplementation.report(e);
+            DependentMainImplementation.reportError(e);
         }
         return null;
     }
@@ -242,7 +240,7 @@ public class DependentDownloaderImplementation implements DependentDownloader {
             zipFile.close();
         }
         catch (Exception e) {
-            DependentMainImplementation.report(e);
+            DependentMainImplementation.reportError(e);
         }
 
 

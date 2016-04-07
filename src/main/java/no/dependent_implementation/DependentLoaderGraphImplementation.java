@@ -15,7 +15,6 @@ import no.dependent_implementation.utils.Booter;
 import no.dependent.DependentLoaderGraph;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
-import org.eclipse.aether.resolution.ArtifactDescriptorException;
 
 class DependentLoaderGraphImplementation implements DependentLoaderGraph{
 	private Set<String> unified=new HashSet<String>(); 
@@ -60,7 +59,7 @@ class DependentLoaderGraphImplementation implements DependentLoaderGraph{
 			try {
 				v.visitLoader(theLoader);
 			} catch (Throwable e){
-				DependentMainImplementation.report(e);
+				DependentMainImplementation.reportError(e);
 			}
 		}
 	}
@@ -189,7 +188,7 @@ class DependentLoaderGraphImplementation implements DependentLoaderGraph{
 					}
 				}
 			} catch (Exception e) {
-				DependentMainImplementation.report(e);
+				DependentMainImplementation.reportError(e);
 			}
 		}
 		visitLoader(theLoader);
@@ -297,7 +296,7 @@ class DependentLoaderGraphImplementation implements DependentLoaderGraph{
 			visitLoader(theLoader);
 			return theLoader;
 		} catch (Exception e) {
-			DependentMainImplementation.report(e, Booter.logFile);
+			DependentMainImplementation.reportError(e, Booter.logFile);
 			return theLoader;
 		}
 		//return null;
@@ -338,7 +337,7 @@ class DependentLoaderGraphImplementation implements DependentLoaderGraph{
 				}
 			}
 		} catch (Exception e) {
-			DependentMainImplementation.report(e);
+			DependentMainImplementation.reportError(e);
 		}
 	}
 		
@@ -359,7 +358,7 @@ class DependentLoaderGraphImplementation implements DependentLoaderGraph{
 			writer.println("}");
 			writer.close();
 		} catch (Exception e) {
-			DependentMainImplementation.report(e);
+			DependentMainImplementation.reportError(e);
 		}
 	}
 	
@@ -475,7 +474,7 @@ class DependentLoaderGraphImplementation implements DependentLoaderGraph{
             try {
                 Files.walkFileTree(archiveFile.toPath(), new CopyDirVisitor(archiveFile,destination));
             } catch (Exception e){
-				DependentMainImplementation.report(e);
+				DependentMainImplementation.reportError(e);
             }
 
         } else if(archiveFile.getName().endsWith("jar")) {

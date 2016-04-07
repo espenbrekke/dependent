@@ -45,7 +45,7 @@ public class PropertiesEngine {
 			props.load(propertiesStream);
 			propertiesStream.close();
 		} catch (IOException e) {
-            DependentMainImplementation.report("Error loading properties from file: "+propertiesFileName,e);
+            DependentMainImplementation.reportError("Error loading properties from file: "+propertiesFileName,e);
 		}
 	}
 

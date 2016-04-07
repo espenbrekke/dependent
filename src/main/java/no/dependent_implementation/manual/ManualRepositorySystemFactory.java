@@ -34,7 +34,7 @@ public class ManualRepositorySystemFactory
             @Override
             public void serviceCreationFailed( Class<?> type, Class<?> impl, Throwable exception )
             {
-                DependentMainImplementation.report(exception);
+                DependentMainImplementation.reportError(exception);
             }
         } );
 

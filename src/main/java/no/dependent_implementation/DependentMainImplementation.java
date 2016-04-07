@@ -4,10 +4,8 @@ import no.dependent.*;
 import no.dependent_implementation.utils.Booter;
 
 import java.io.*;
-import java.lang.reflect.Method;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
@@ -18,6 +16,8 @@ import java.util.List;
 public class DependentMainImplementation {
     private static DependentLoaderGraphImplementation loaderGraph=(DependentLoaderGraphImplementation)DependentFactory.get().getGraph();// DependentLoaderGraphImplementation.create(dependencyManager, DependentMain.class.getClassLoader());
     private static DependentRepositoryManager dependencyManager=loaderGraph.dependencyManager;
+
+    private static boolean isFailure=false;
 
     public static void main(String[] args) {
         String configFileName="dependent.conf";
@@ -48,6 +48,7 @@ public class DependentMainImplementation {
 
 
     public static boolean executeScript(List<String> script, String[] args){
+        isFailure=false;
         return readConfig(script);
     };
 
@@ -75,6 +76,7 @@ public class DependentMainImplementation {
 
     private static boolean readConfig(List<String> configFileContent){
         boolean success=true;
+        boolean ignoreError=true;
 
         PrintStream sysOut=System.out;
         ByteArrayOutputStream tmpSysOut=new ByteArrayOutputStream();
@@ -90,7 +92,6 @@ public class DependentMainImplementation {
         {
             LinkedList<String> lines=new LinkedList<>();
             lines.addAll(configFileContent);
-
 
             while (!lines.isEmpty())
             {
@@ -133,6 +134,8 @@ public class DependentMainImplementation {
                         System.setOut(sysOut);
                         System.setErr(sysErr);
                         Booter.logFile=System.out;
+                    } else if(sCurrentLine.startsWith("failOnError")){
+                        ignoreError=false;
                     } else if(sCurrentLine.startsWith("redirect")){
                         String withoutRedirect=sCurrentLine.replaceFirst("redirect", "").replaceFirst("\\s+", "");
                         String[] streamNameValue = withoutRedirect.split("\\s",2);
@@ -182,7 +185,7 @@ public class DependentMainImplementation {
                             try{
                                 run.run();
                             } catch (Throwable t){
-                                DependentMainImplementation.report(t);
+                                DependentMainImplementation.reportError(t);
                                 success=false;
                             }
                         }
@@ -218,6 +221,10 @@ public class DependentMainImplementation {
                             loaderGraph.registerUnpackedJar(whatWhere[0],whatWhere[1]);
                         }
                     }
+
+                    if((!ignoreError) && isFailure){
+                        return false;
+                    }
                 } catch (Exception e){
                     e.printStackTrace(Booter.logFile);
                 }
@@ -238,7 +245,7 @@ public class DependentMainImplementation {
                     br.close();
             } catch (IOException ex)
             {
-                DependentMainImplementation.report(ex);
+                DependentMainImplementation.reportError(ex);
             }
         }
         return success;
@@ -278,13 +285,28 @@ public class DependentMainImplementation {
     }
 
 
+    public static void reportError(String preMessage, Throwable e){
+        isFailure=true;
+        report(preMessage, e);
+    };
+    public static void reportError(Throwable e){
+        isFailure = true;
+        report(e, Booter.logFile);
+    };
+    public static void reportError(Throwable e, PrintStream reportTo) {
+        isFailure = true;
+        report(e, reportTo);
+    }
+
     public static void report(String preMessage, Throwable e){
         Booter.logFile.println(preMessage);
-        report(e,Booter.logFile);
+        report(e, Booter.logFile);
     };
+
     public static void report(Throwable e){
-        report(e,Booter.logFile);
+        report(e, Booter.logFile);
     };
+
     public static void report(Throwable e, PrintStream reportTo){
         Throwable cause = null;
         Throwable result = e;

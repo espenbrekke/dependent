@@ -144,7 +144,7 @@ public class ConsoleTransferListener
 
         if ( !( event.getException() instanceof MetadataNotFoundException ) )
         {
-            DependentMainImplementation.report(event.getException(),out);
+            DependentMainImplementation.reportError(event.getException(), out);
         }
     }
 
@@ -160,7 +160,7 @@ public class ConsoleTransferListener
 
     public void transferCorrupted( TransferEvent event )
     {
-        DependentMainImplementation.report(event.getException(),out);
+        DependentMainImplementation.reportError(event.getException(), out);
     }
 
     protected long toKB( long bytes )
