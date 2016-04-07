@@ -12,9 +12,21 @@ class ToRun{
         assert method!=null;
         assert loader!=null;
     }
-    public String[] mainParams;
+    private String[] mainParams={};
     public final DependentLoaderImplementation loader;
     public final String method;
+
+    public void addMainArgs(String[] newParams){
+        String[] newArray=new String[mainParams.length+newParams.length];
+        for (int i = 0; i < mainParams.length; i++) {
+            newArray[i]=mainParams[i];
+        }
+        for (int i = mainParams.length; i < newArray.length; i++) {
+            newArray[i]=newParams[i-mainParams.length];
+        }
+        mainParams=newArray;
+    }
+
     public void run() {
         try {
             int lastDotIndex=method.lastIndexOf(".");

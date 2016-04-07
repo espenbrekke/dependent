@@ -5,7 +5,10 @@ import no.dependent_implementation.utils.Booter;
 
 import java.io.*;
 import java.lang.reflect.Method;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -32,17 +35,20 @@ class DependentMainImplementation {
         Thread.currentThread().setContextClassLoader(new DbWatchDeligatingLoader(DependentMain.class.getClassLoader()));
 
         List<String> configFileContent=readFileLines(configFileName);
-        executeScript(configFileContent, args);
+        if(!executeScript(configFileContent, args)){
+            System.exit(-1);
+        };
         //	loaderGraph.logGraph();
     }
+    public static boolean executeScript(String script){
+        List<String> configFileContent=readFileLines(script);
+        String[] args={};
+        return executeScript(configFileContent, args);
+    }
 
-    public static void executeScript(List<String> script, String[] args){
-        List<ToRun> methodsToRun=readConfig(script);
 
-        for (ToRun methodToRun : methodsToRun) {
-            methodToRun.mainParams=args;
-            methodToRun.run();
-        }
+    public static boolean executeScript(List<String> script, String[] args){
+        return readConfig(script);
     };
 
 
@@ -67,7 +73,9 @@ class DependentMainImplementation {
 
     static PropertiesEngine props=new PropertiesEngine();
 
-    private static List<ToRun> readConfig(List<String> configFileContent){
+    private static boolean readConfig(List<String> configFileContent){
+        boolean success=true;
+
         PrintStream sysOut=System.out;
         ByteArrayOutputStream tmpSysOut=new ByteArrayOutputStream();
         System.setOut(new PrintStream(tmpSysOut));
@@ -76,18 +84,10 @@ class DependentMainImplementation {
         ByteArrayOutputStream tmpSysErr=new ByteArrayOutputStream();
         System.setErr(new PrintStream(tmpSysOut));
 
-
-        List<ToRun> toRun=new ArrayList<ToRun>() ;
-
         BufferedReader br = null;
         String sCurrentLine = null;
         try
         {
-/*            File file=new File(configFileName);
-            if(!file.exists()) return toRun;
-            FileReader reader= new FileReader(file);
-            br = new BufferedReader(reader);*/
-
             LinkedList<String> lines=new LinkedList<>();
             lines.addAll(configFileContent);
 
@@ -106,7 +106,7 @@ class DependentMainImplementation {
                         if(artifactsourceParts.length>1){
                             artifactsourceUrl=artifactsourceParts[0];
                             repoPath=artifactsourceParts[1];
-                            dependencyManager.addSource(repoPath,artifactsourceUrl);
+                            dependencyManager.addSource(artifactsourceUrl, repoPath);
                         }
                     } else if(sCurrentLine.startsWith("localstore")){
                         String wothoutLocalstore=sCurrentLine.replaceFirst("localstore\\s+", "");
@@ -119,15 +119,19 @@ class DependentMainImplementation {
 
                     } else if(sCurrentLine.startsWith("include")){
                         String withoutInclude=sCurrentLine.replaceFirst("include", "").replaceFirst("\\s+", "");
-                        lines.addAll(0,readFileLines(withoutInclude));
+                        lines.addAll(0, readFileLines(withoutInclude));
                     } else if(sCurrentLine.startsWith("stop")){
                         break;
                     } else if(sCurrentLine.startsWith("export")){
                         String withoutExport=sCurrentLine.replaceFirst("export", "").replaceFirst("\\s+", "");
                         String[] nameValue = withoutExport.split("\\s",2);
                         if(nameValue.length==2){
-                            System.getProperties().setProperty(nameValue[0], (" "+nameValue[1]).replaceFirst("\\s+", ""));
+                            String value=applyJvmKeywords(nameValue[1]);
+                            System.getProperties().setProperty(nameValue[0], (" "+value).replaceFirst("\\s+", ""));
                         }
+                    } else if(sCurrentLine.startsWith("noredirect")){
+                        System.setOut(sysOut);
+                        System.setErr(sysErr);
                     } else if(sCurrentLine.startsWith("redirect")){
                         String withoutRedirect=sCurrentLine.replaceFirst("redirect", "").replaceFirst("\\s+", "");
                         String[] streamNameValue = withoutRedirect.split("\\s",2);
@@ -160,15 +164,27 @@ class DependentMainImplementation {
                         loaderGraph.enshureJarLoaded(toLoad);
                     } else
                     if(sCurrentLine.startsWith("run")){
-                        String theEssential=sCurrentLine.replaceFirst("run", "").replaceAll("\\s+", "");
-                        String[] artifactSlashMethod=theEssential.split("/",2);
-                        System.out.println(theEssential);
-                        System.out.println(artifactSlashMethod[0]);
-                        System.out.println(artifactSlashMethod[1]);
-                        ToRun run=new ToRun(
-                                artifactSlashMethod[1],
-                                loaderGraph.enshureJarLoaded(artifactSlashMethod[0]));
-                        toRun.add(run);
+                        String theEssential=sCurrentLine.replaceFirst("run", "").replaceFirst("\\s+", "");
+                        String[] methodAndParams=theEssential.split("\\s+");
+                        if(methodAndParams.length>0){
+                            String[] artifactSlashMethod=methodAndParams[0].split("/", 2);
+                            System.out.println(theEssential);
+                            System.out.println(artifactSlashMethod[0]);
+                            System.out.println(artifactSlashMethod[1]);
+                            ToRun run=new ToRun(
+                                    artifactSlashMethod[1],
+                                    loaderGraph.enshureJarLoaded(artifactSlashMethod[0]));
+                            if(methodAndParams.length>1){
+                                String[] args=Arrays.copyOfRange(methodAndParams, 1, methodAndParams.length) ;
+                                run.addMainArgs(args);
+                            }
+                            try{
+                                run.run();
+                            } catch (Throwable t){
+                                t.printStackTrace();
+                                success=false;
+                            }
+                        }
                     } else if(sCurrentLine.startsWith("loadproperties")){
                         String propertiesFileName=sCurrentLine.replaceFirst("loadproperties", "").replaceAll("\\s+", "");
                         props.loadProperties(propertiesFileName);
@@ -224,7 +240,7 @@ class DependentMainImplementation {
                 ex.printStackTrace(Booter.logFile);
             }
         }
-        return toRun;
+        return success;
     }
 
 
@@ -249,5 +265,14 @@ class DependentMainImplementation {
 
         }
         return fallback;
+    }
+
+    private static String applyJvmKeywords(String what){
+        if(what.contains("currentdir()")){
+            Path currentRelativePath = Paths.get("");
+            String s = currentRelativePath.toAbsolutePath().toString();
+            return what.replace("currentdir()", s);
+        }
+        return what;
     }
 }

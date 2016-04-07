@@ -14,9 +14,11 @@ public class DependentFactoryImplementation extends DependentFactory {
     public ResourceFile resourceFile(String resourceId){
         return new ResourceFileImplementation(resourceId);
     }
+
     public DependentLoaderGraphImplementation getGraph(){
         return DependentLoaderGraphImplementation.get(parentLoader);
     }
+
     public no.dependent.DependentTracker getTracker(){
         return DependentTrackerImplementation.get();
     };

@@ -330,7 +330,6 @@ class DependentLoaderGraphImplementation implements DependentLoaderGraph{
 		// Fetch jar and dependencies.
 		try {
 			Result<File> localFileName=dependencyManager.getLocalFile(artifactId);
-			DependentLoaderImplementation theLoader=null;
 			
 			List<Artifact> dependencies=dependencyManager.getDirectDependencies(artifactId);
 			

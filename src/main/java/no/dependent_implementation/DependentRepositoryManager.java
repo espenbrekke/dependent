@@ -25,20 +25,24 @@ public class DependentRepositoryManager {
     
 	private ArtifactResult resolveArtifact(
 			Artifact artifact) throws Exception {
+		Exception ex=null;
 
 		for(DependentRepository repository:repositories){
 			try{
 				ArtifactResult result=repository.resolveArtifact(artifact);
 				if((result!=null) && (!result.isMissing()))
 					return result;
-			} catch (Exception e){}
+			} catch (Exception e){
+				ex=e;
+			}
 		}
 
-		throw new Exception("unable to resolve artifact: "+artifact.getArtifactId());
+		throw new Exception("unable to resolve artifact: "+artifact.getArtifactId(), ex);
 	}
 
     private ArtifactDescriptorResult getArtifactDescriptor(
 			Artifact artifact) throws Exception {
+		Exception ex=null;
 
 		for(DependentRepository repository:repositories){
 			try{
@@ -49,9 +53,10 @@ public class DependentRepositoryManager {
 						return artifactDescriptor;
 				}
 			} catch (Exception e){
+				ex=e;
 			}
 		}
-		throw new Exception("unable to describe artifact: "+artifact.getArtifactId());
+		throw new Exception("unable to describe artifact: "+artifact.getArtifactId(), ex);
 	}
 
 	public Result<File> getLocalFile(Artifact artifact){
@@ -106,6 +111,7 @@ public class DependentRepositoryManager {
 	public void addSource(String artifactsourceUrl, String localStore) {
 		DependentRepository[] newArray=Arrays.copyOf(repositories,repositories.length+1) ;
 		newArray[newArray.length-1]=new DependentRepository(new File(localStore), artifactsourceUrl, "");
+		repositories=newArray;
 	}
 
 

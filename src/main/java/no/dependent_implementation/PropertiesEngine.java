@@ -5,6 +5,8 @@ import static java.util.regex.Pattern.compile;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Properties;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -12,6 +14,7 @@ import java.util.regex.Pattern;
 public class PropertiesEngine {
 	private static final Pattern PATTERN = compile("\\$\\{(.+?)\\}");
 	private Properties props=new Properties();
+
 	
 	public String replaceProperties(String line) {
 		return replace(line);

@@ -1,5 +1,6 @@
 package no.dependent;
 
+import java.io.File;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URL;
@@ -19,4 +20,20 @@ public class DependentMain {
             e.printStackTrace();
         }
 	}
+
+    public static boolean executeScript(String script){
+        Class<?> mainImplementationClass=DependentFactory.get().mainClass();
+        try {
+            Class<?>[] mainParamDef = {String.class};
+            Method executeImpl = mainImplementationClass.getMethod("executeScript", mainParamDef);
+            Object[] argsWrapped={script};
+            executeImpl.setAccessible(true);
+            return (boolean)executeImpl.invoke(null,argsWrapped);
+        } catch(Exception e){
+            System.err.println("Fatal error:");
+            e.printStackTrace();
+        }
+        return false;
+    }
+
 }
