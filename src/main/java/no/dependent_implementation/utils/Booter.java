@@ -56,7 +56,7 @@ public class Booter
         	LocalRepository localRepo = new LocalRepository( localRepoDir );
         	session.setLocalRepositoryManager( system.newLocalRepositoryManager( session, localRepo ) );
 			session.setTransferListener( new ConsoleTransferListener(logFile) );
-			session.setRepositoryListener( new ConsoleRepositoryListener(logFile) );
+			session.setRepositoryListener( new ConsoleRepositoryListener() );
 
         return session;
     }

@@ -295,6 +295,17 @@ public class DependentMainImplementation {
     }
 
 
+    public static void log2(String what){
+        if(logLevel>=2){
+            Booter.logFile.println(what);
+        }
+    }
+    public static void log3(String what){
+        if(logLevel>=2){
+            Booter.logFile.println(what);
+        }
+    }
+
     public static void reportError(String preMessage, Throwable e){
         numberOfFErrors+=1;
         report(preMessage, e);
