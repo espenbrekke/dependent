@@ -29,9 +29,12 @@ public class DependentRepositoryManager {
 
 		for(DependentRepository repository:repositories){
 			try{
-				ArtifactResult result=repository.resolveArtifact(artifact);
-				if((result!=null) && (!result.isMissing()))
-					return result;
+				if(repository.canResolve(artifact)){
+					ArtifactResult result=repository.resolveArtifact(artifact);
+
+					if((result!=null) && (!result.isMissing()))
+						return result;
+				}
 			} catch (Exception e){
 				ex=e;
 			}
@@ -46,11 +49,13 @@ public class DependentRepositoryManager {
 
 		for(DependentRepository repository:repositories){
 			try{
-				ArtifactResult result=repository.resolveArtifact(artifact);
-				if((result!=null) && (!result.isMissing())){
-					ArtifactDescriptorResult artifactDescriptor=repository.getArtifactDescriptor(artifact);
-					if(artifactDescriptor!=null )
-						return artifactDescriptor;
+				if(repository.canResolve(artifact)) {
+					ArtifactResult result = repository.resolveArtifact(artifact);
+					if ((result != null) && (!result.isMissing())) {
+						ArtifactDescriptorResult artifactDescriptor = repository.getArtifactDescriptor(artifact);
+						if (artifactDescriptor != null)
+							return artifactDescriptor;
+					}
 				}
 			} catch (Exception e){
 				ex=e;
@@ -102,15 +107,15 @@ public class DependentRepositoryManager {
 		session = Booter.newRepositorySystemSession( system, localRepo );
 	}
 */
-	public void addLocalStore(String localStore, String name){
+	public void addLocalStore(String localStore, String name, String groupFilter){
 		DependentRepository[] newArray=Arrays.copyOf(repositories,repositories.length+1) ;
-		newArray[newArray.length-1]=new DependentRepository(new File(localStore), null, name);
+		newArray[newArray.length-1]=new DependentRepository(new File(localStore), null, name, groupFilter);
 		repositories=newArray;
 	}
 
-	public void addSource(String artifactsourceUrl, String localStore) {
+	public void addSource(String artifactsourceUrl, String localStore, String groupFilter) {
 		DependentRepository[] newArray=Arrays.copyOf(repositories,repositories.length+1) ;
-		newArray[newArray.length-1]=new DependentRepository(new File(localStore), artifactsourceUrl, "");
+		newArray[newArray.length-1]=new DependentRepository(new File(localStore), artifactsourceUrl, "", groupFilter);
 		repositories=newArray;
 	}
 

@@ -18,10 +18,16 @@ public class DependentRepository {
     final public File root;
     final public RemoteRepository remoteRepository;
     final public RepositorySystemSession session;
+    final public String groupFilter;
 
     private RepositorySystem system = Booter.newRepositorySystem();
 
-    public DependentRepository(File root, String artifactsourceUrl,String name){
+    public boolean canResolve(Artifact artifact){
+        if("".equals(groupFilter)) return true;
+        return artifact.getGroupId().startsWith(groupFilter);
+    }
+
+    public DependentRepository(File root, String artifactsourceUrl,String name, String groupFilter){
         this.root=root;
         session= Booter.newRepositorySystemSession(system, root.toString());
 
@@ -32,6 +38,7 @@ public class DependentRepository {
             remoteRepository= Booter.newRepository("remote-maven", artifactsourceUrl);
         }
         this.name=name;
+        this.groupFilter=groupFilter;
     }
 
     public ArtifactResult resolveArtifact(Artifact artifact) throws ArtifactResolutionException {

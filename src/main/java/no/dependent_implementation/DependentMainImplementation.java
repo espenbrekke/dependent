@@ -102,21 +102,24 @@ public class DependentMainImplementation {
                     System.out.println(sCurrentLine);
                     if(sCurrentLine.startsWith("artifactsource")){
                         String artifactsource=sCurrentLine.replaceFirst("artifactsource\\s+", "").replaceAll("\\s+", " ");
-                        String[] artifactsourceParts=artifactsource.split("\\s+", 2);
+                        String[] artifactsourceParts=artifactsource.split("\\s+", 3);
                         String artifactsourceUrl="";
                         String repoPath="";
                         if(artifactsourceParts.length>1){
+                            String groupFilter="";
+                            if(artifactsourceParts.length>2) groupFilter=artifactsourceParts[2];
+
                             artifactsourceUrl=artifactsourceParts[0];
                             repoPath=artifactsourceParts[1];
-                            dependencyManager.addSource(artifactsourceUrl, repoPath);
+                            dependencyManager.addSource(artifactsourceUrl, repoPath, groupFilter);
                         }
                     } else if(sCurrentLine.startsWith("localstore")){
                         String wothoutLocalstore=sCurrentLine.replaceFirst("localstore\\s+", "");
                         String[] fileThenName = wothoutLocalstore.split("\\s+", 2);
                         if(fileThenName.length==2){
-                            dependencyManager.addLocalStore(fileThenName[0],fileThenName[1]);
+                            dependencyManager.addLocalStore(fileThenName[0],fileThenName[1], "");
                         } else {
-                            dependencyManager.addLocalStore(fileThenName[0],fileThenName[1]);
+                            dependencyManager.addLocalStore(fileThenName[0],fileThenName[1], "");
                         }
 
                     } else if(sCurrentLine.startsWith("include")){
