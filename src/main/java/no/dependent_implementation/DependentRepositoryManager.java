@@ -109,13 +109,13 @@ public class DependentRepositoryManager {
 */
 	public void addLocalStore(String localStore, String name, String groupFilter){
 		DependentRepository[] newArray=Arrays.copyOf(repositories,repositories.length+1) ;
-		newArray[newArray.length-1]=new DependentRepository(new File(localStore), null, name, groupFilter);
+		newArray[newArray.length-1]=new DependentRepository(new File(localStore), null, name, groupFilter, new String[0]);
 		repositories=newArray;
 	}
 
-	public void addSource(String artifactsourceUrl, String localStore, String groupFilter) {
+	public void addSource(String artifactsourceUrl, String localStore, String groupFilter, String[] definition) {
 		DependentRepository[] newArray=Arrays.copyOf(repositories,repositories.length+1) ;
-		newArray[newArray.length-1]=new DependentRepository(new File(localStore), artifactsourceUrl, "", groupFilter);
+		newArray[newArray.length-1]=new DependentRepository(new File(localStore), artifactsourceUrl, "", groupFilter, definition);
 		repositories=newArray;
 	}
 

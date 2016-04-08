@@ -14,7 +14,7 @@ public class RemoteRepositoriesImplementation implements RemoteRepositories{
 	public RemoteRepositoriesImplementation(String ... urls){
 		repos=new LinkedList<RemoteRepository>();
 		for (String repoUrl : urls) {
-			repos.add(Booter.newRepository(repoUrl.substring(0, 10) + "..", repoUrl));
+			repos.add(Booter.newRepository(repoUrl.substring(0, 10) + "..", repoUrl,new String[0]));
 		}
 	}
 	

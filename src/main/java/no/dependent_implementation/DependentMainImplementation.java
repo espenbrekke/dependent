@@ -102,7 +102,7 @@ public class DependentMainImplementation {
                     System.out.println(sCurrentLine);
                     if(sCurrentLine.startsWith("artifactsource")){
                         String artifactsource=sCurrentLine.replaceFirst("artifactsource\\s+", "").replaceAll("\\s+", " ");
-                        String[] artifactsourceParts=artifactsource.split("\\s+", 3);
+                        String[] artifactsourceParts=artifactsource.split("\\s+");
                         String artifactsourceUrl="";
                         String repoPath="";
                         if(artifactsourceParts.length>1){
@@ -111,7 +111,7 @@ public class DependentMainImplementation {
 
                             artifactsourceUrl=artifactsourceParts[0];
                             repoPath=artifactsourceParts[1];
-                            dependencyManager.addSource(artifactsourceUrl, repoPath, groupFilter);
+                            dependencyManager.addSource(artifactsourceUrl, repoPath, groupFilter, artifactsourceParts);
                         }
                     } else if(sCurrentLine.startsWith("localstore")){
                         String wothoutLocalstore=sCurrentLine.replaceFirst("localstore\\s+", "");

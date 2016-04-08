@@ -27,7 +27,7 @@ public class DependentRepository {
         return artifact.getGroupId().startsWith(groupFilter);
     }
 
-    public DependentRepository(File root, String artifactsourceUrl,String name, String groupFilter){
+    public DependentRepository(File root, String artifactsourceUrl,String name, String groupFilter, String[] tagsRepoPolicy){
         this.root=root;
         session= Booter.newRepositorySystemSession(system, root.toString());
 
@@ -35,7 +35,7 @@ public class DependentRepository {
             remoteRepository=null;
         }
         else {
-            remoteRepository= Booter.newRepository("remote-maven", artifactsourceUrl);
+            remoteRepository= Booter.newRepository("remote-maven", artifactsourceUrl, tagsRepoPolicy);
         }
         this.name=name;
         this.groupFilter=groupFilter;

@@ -12,6 +12,7 @@ import org.eclipse.aether.DefaultRepositorySystemSession;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.repository.LocalRepository;
 import org.eclipse.aether.repository.RemoteRepository;
+import org.eclipse.aether.repository.RepositoryPolicy;
 
 /**
  * A helper to boot the repository system and a repository system session.
@@ -54,9 +55,9 @@ public class Booter
     //    	PrintStream logFile=new PrintStream("dependent.log");
         
         	LocalRepository localRepo = new LocalRepository( localRepoDir );
-        	session.setLocalRepositoryManager( system.newLocalRepositoryManager( session, localRepo ) );
-			session.setTransferListener( new ConsoleTransferListener(logFile) );
-			session.setRepositoryListener( new ConsoleRepositoryListener() );
+        	session.setLocalRepositoryManager(system.newLocalRepositoryManager(session, localRepo));
+			session.setTransferListener(new ConsoleTransferListener(logFile));
+			session.setRepositoryListener(new ConsoleRepositoryListener());
 
         return session;
     }
@@ -73,11 +74,35 @@ public class Booter
     }
 */
 	public static RemoteRepository newRepository(String artifactsourceName,
-			String artifactsourceUrl) {
+			String artifactsourceUrl, String[] policy) {
 		return new RemoteRepository.Builder( artifactsourceName
 					, "default"
-					, artifactsourceUrl ).build();
-
+					, artifactsourceUrl ).setPolicy(createPolicy(policy)).build();
 	}
+
+    private static RepositoryPolicy createPolicy(String[] policy){
+        String updatePolicy=RepositoryPolicy.UPDATE_POLICY_NEVER;
+        String checksumPolicy=RepositoryPolicy.CHECKSUM_POLICY_FAIL;
+
+        for (int i = 0; i < policy.length; i++) {
+            switch(policy[i]){
+                case "UPDATE_POLICY_NEVER": updatePolicy=RepositoryPolicy.UPDATE_POLICY_NEVER;
+                    break;
+                case "UPDATE_POLICY_ALWAYS": updatePolicy=RepositoryPolicy.UPDATE_POLICY_ALWAYS;
+                    break;
+                case "UPDATE_POLICY_DAILY": updatePolicy=RepositoryPolicy.UPDATE_POLICY_DAILY;
+                    break;
+//                case "UPDATE_POLICY_INTERVAL": updatePolicy=RepositoryPolicy.UPDATE_POLICY_INTERVAL;
+//                    break;
+                case "CHECKSUM_POLICY_FAIL": checksumPolicy=RepositoryPolicy.CHECKSUM_POLICY_FAIL;
+                    break;
+                case "CHECKSUM_POLICY_WARN": checksumPolicy=RepositoryPolicy.CHECKSUM_POLICY_WARN;
+                    break;
+                case "CHECKSUM_POLICY_IGNORE":checksumPolicy=RepositoryPolicy.CHECKSUM_POLICY_IGNORE;
+                    break;
+            }
+        }
+        return new RepositoryPolicy(true, updatePolicy, checksumPolicy);
+    }
 
 }
