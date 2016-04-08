@@ -17,7 +17,7 @@ public class DependentMainImplementation {
     private static DependentLoaderGraphImplementation loaderGraph=(DependentLoaderGraphImplementation)DependentFactory.get().getGraph();// DependentLoaderGraphImplementation.create(dependencyManager, DependentMain.class.getClassLoader());
     private static DependentRepositoryManager dependencyManager=loaderGraph.dependencyManager;
 
-    private static boolean isFailure=false;
+    private static int numberOfFErrors=0;
 
     public static void main(String[] args) {
         String configFileName="dependent.conf";
@@ -48,7 +48,7 @@ public class DependentMainImplementation {
 
 
     public static boolean executeScript(List<String> script, String[] args){
-        isFailure=false;
+        numberOfFErrors=0;
         return readConfig(script);
     };
 
@@ -73,10 +73,11 @@ public class DependentMainImplementation {
     }
 
     static PropertiesEngine props=new PropertiesEngine();
+    public static int logLevel=1;
 
     private static boolean readConfig(List<String> configFileContent){
         boolean success=true;
-        boolean ignoreError=true;
+        int failOnError=0;
 
         PrintStream sysOut=System.out;
         ByteArrayOutputStream tmpSysOut=new ByteArrayOutputStream();
@@ -130,12 +131,21 @@ public class DependentMainImplementation {
                             String value=applyJvmKeywords(nameValue[1]);
                             System.getProperties().setProperty(nameValue[0], (" "+value).replaceFirst("\\s+", ""));
                         }
+                    } else if(sCurrentLine.startsWith("loglevel")){
+                        String withoutLoglevel=sCurrentLine.replaceFirst("loglevel", "").replaceFirst("\\s+", "");
+                        try{
+                            logLevel=Integer.parseInt(withoutLoglevel);
+                        }catch (Exception e){}
                     } else if(sCurrentLine.startsWith("noredirect")){
                         System.setOut(sysOut);
                         System.setErr(sysErr);
                         Booter.logFile=System.out;
                     } else if(sCurrentLine.startsWith("failOnError")){
-                        ignoreError=false;
+                        String withoutFailOnError=sCurrentLine.replaceFirst("failOnError", "").replaceFirst("\\s+", "");
+                        failOnError=1;
+                        try{
+                            failOnError=Integer.parseInt(withoutFailOnError);
+                        }catch (Exception e){}
                     } else if(sCurrentLine.startsWith("redirect")){
                         String withoutRedirect=sCurrentLine.replaceFirst("redirect", "").replaceFirst("\\s+", "");
                         String[] streamNameValue = withoutRedirect.split("\\s",2);
@@ -222,7 +232,7 @@ public class DependentMainImplementation {
                         }
                     }
 
-                    if((!ignoreError) && isFailure){
+                    if((failOnError!=0) && (numberOfFErrors>=failOnError)){
                         return false;
                     }
                 } catch (Exception e){
@@ -248,7 +258,7 @@ public class DependentMainImplementation {
                 DependentMainImplementation.reportError(ex);
             }
         }
-        return success;
+        return success || (numberOfFErrors==0);
     }
 
 
@@ -286,15 +296,15 @@ public class DependentMainImplementation {
 
 
     public static void reportError(String preMessage, Throwable e){
-        isFailure=true;
+        numberOfFErrors+=1;
         report(preMessage, e);
     };
     public static void reportError(Throwable e){
-        isFailure = true;
+        numberOfFErrors+=1;
         report(e, Booter.logFile);
     };
     public static void reportError(Throwable e, PrintStream reportTo) {
-        isFailure = true;
+        numberOfFErrors+=1;
         report(e, reportTo);
     }
 

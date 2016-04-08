@@ -24,13 +24,13 @@ import org.eclipse.aether.transfer.MetadataNotFoundException;
 import org.eclipse.aether.transfer.TransferEvent;
 import org.eclipse.aether.transfer.TransferResource;
 
+
 /**
  * A simplistic transfer listener that logs uploads/downloads to the console.
  */
 public class ConsoleTransferListener
     extends AbstractTransferListener
 {
-
     private PrintStream out;
 
     private Map<TransferResource, Long> downloads = new ConcurrentHashMap<TransferResource, Long>();
@@ -51,32 +51,35 @@ public class ConsoleTransferListener
     public void transferInitiated( TransferEvent event )
     {
         String message = event.getRequestType() == TransferEvent.RequestType.PUT ? "Uploading" : "Downloading";
-
-        out.println( message + ": " + event.getResource().getRepositoryUrl() + event.getResource().getResourceName() );
+        if( (DependentMainImplementation.logLevel>=3) || (event.getResource().getResourceName().endsWith("jar") && (DependentMainImplementation.logLevel>=2))) {
+            out.println(message + ": " + event.getResource().getRepositoryUrl() + event.getResource().getResourceName());
+        }
     }
 
     @Override
     public void transferProgressed( TransferEvent event )
     {
-        TransferResource resource = event.getResource();
-        downloads.put( resource, Long.valueOf( event.getTransferredBytes() ) );
+        if(DependentMainImplementation.logLevel>=3){
+            TransferResource resource = event.getResource();
+            downloads.put( resource, Long.valueOf( event.getTransferredBytes() ) );
 
-        StringBuilder buffer = new StringBuilder( 64 );
+            StringBuilder buffer = new StringBuilder( 64 );
 
-        for ( Map.Entry<TransferResource, Long> entry : downloads.entrySet() )
-        {
-            long total = entry.getKey().getContentLength();
-            long complete = entry.getValue().longValue();
+            for ( Map.Entry<TransferResource, Long> entry : downloads.entrySet() )
+            {
+                long total = entry.getKey().getContentLength();
+                long complete = entry.getValue().longValue();
 
-            buffer.append( getStatus( complete, total ) ).append( "  " );
+                buffer.append( getStatus( complete, total ) ).append( "  " );
+            }
+
+            int pad = lastLength - buffer.length();
+            lastLength = buffer.length();
+            pad( buffer, pad );
+            buffer.append( '\r' );
+
+            out.print( buffer );
         }
-
-        int pad = lastLength - buffer.length();
-        lastLength = buffer.length();
-        pad( buffer, pad );
-        buffer.append( '\r' );
-
-        out.print( buffer );
     }
 
     private String getStatus( long complete, long total )
@@ -115,32 +118,33 @@ public class ConsoleTransferListener
     {
         transferCompleted( event );
 
-        TransferResource resource = event.getResource();
-        long contentLength = event.getTransferredBytes();
-        if ( contentLength >= 0 )
-        {
-            String type = ( event.getRequestType() == TransferEvent.RequestType.PUT ? "Uploaded" : "Downloaded" );
-            String len = contentLength >= 1024 ? toKB( contentLength ) + " KB" : contentLength + " B";
+        if(DependentMainImplementation.logLevel>=2) {
 
-            String throughput = "";
-            long duration = System.currentTimeMillis() - resource.getTransferStartTime();
-            if ( duration > 0 )
-            {
-                long bytes = contentLength - resource.getResumeOffset();
-                DecimalFormat format = new DecimalFormat( "0.0", new DecimalFormatSymbols( Locale.ENGLISH ) );
-                double kbPerSec = ( bytes / 1024.0 ) / ( duration / 1000.0 );
-                throughput = " at " + format.format( kbPerSec ) + " KB/sec";
+            TransferResource resource = event.getResource();
+            long contentLength = event.getTransferredBytes();
+            if (contentLength >= 0) {
+                String type = (event.getRequestType() == TransferEvent.RequestType.PUT ? "Uploaded" : "Downloaded");
+                String len = contentLength >= 1024 ? toKB(contentLength) + " KB" : contentLength + " B";
+
+                String throughput = "";
+                long duration = System.currentTimeMillis() - resource.getTransferStartTime();
+                if (duration > 0) {
+                    long bytes = contentLength - resource.getResumeOffset();
+                    DecimalFormat format = new DecimalFormat("0.0", new DecimalFormatSymbols(Locale.ENGLISH));
+                    double kbPerSec = (bytes / 1024.0) / (duration / 1000.0);
+                    throughput = " at " + format.format(kbPerSec) + " KB/sec";
+                }
+
+                out.println(type + ": " + resource.getRepositoryUrl() + resource.getResourceName() + " (" + len
+                        + throughput + ")");
             }
-
-            out.println( type + ": " + resource.getRepositoryUrl() + resource.getResourceName() + " (" + len
-                + throughput + ")" );
         }
     }
 
     @Override
     public void transferFailed( TransferEvent event )
     {
-        transferCompleted( event );
+        transferCompleted(event);
 
         if ( !( event.getException() instanceof MetadataNotFoundException ) )
         {
@@ -151,11 +155,12 @@ public class ConsoleTransferListener
     private void transferCompleted( TransferEvent event )
     {
         downloads.remove( event.getResource() );
-
-        StringBuilder buffer = new StringBuilder( 64 );
-        pad( buffer, lastLength );
-        buffer.append( '\r' );
-        out.print( buffer );
+        if(DependentMainImplementation.logLevel>=2) {
+            StringBuilder buffer = new StringBuilder(64);
+            pad(buffer, lastLength);
+            buffer.append('\r');
+            out.print(buffer);
+        }
     }
 
     public void transferCorrupted( TransferEvent event )
