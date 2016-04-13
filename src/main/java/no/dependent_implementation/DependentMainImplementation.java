@@ -49,7 +49,7 @@ public class DependentMainImplementation {
 
     public static boolean executeScript(List<String> script, String[] args){
         numberOfFErrors=0;
-        return readConfig(script);
+        return readConfig(script, args);
     };
 
 
@@ -75,7 +75,7 @@ public class DependentMainImplementation {
     static PropertiesEngine props=new PropertiesEngine();
     public static int logLevel=1;
 
-    private static boolean readConfig(List<String> configFileContent){
+    private static boolean readConfig(List<String> configFileContent,String[] mainArgs){
         boolean success=true;
         int failOnError=0;
 
@@ -119,7 +119,7 @@ public class DependentMainImplementation {
                         if(fileThenName.length==2){
                             dependencyManager.addLocalStore(fileThenName[0],fileThenName[1], "");
                         } else {
-                            dependencyManager.addLocalStore(fileThenName[0],fileThenName[1], "");
+                            dependencyManager.addLocalStore(fileThenName[0],fileThenName[1], fileThenName[2]);
                         }
 
                     } else if(sCurrentLine.startsWith("include")){
@@ -175,6 +175,12 @@ public class DependentMainImplementation {
                     if(sCurrentLine.startsWith("get")){
                         String toGet=sCurrentLine.replaceFirst("get", "").replaceAll("\\s+", "");
                         loaderGraph.getJar(toGet);
+                    }  else
+                    if(sCurrentLine.startsWith("download_flat")){
+                        String[] whatWhereFlags=sCurrentLine.replaceFirst("download_flat", " ").replaceFirst("\\s+", "").split("\\s+");
+                        if(whatWhereFlags.length>1){
+                            loaderGraph.downloadFlat(whatWhereFlags[0],whatWhereFlags[1]);
+                        }
                     } else
                     if(sCurrentLine.startsWith("loadartifact")){
                         String toLoad=sCurrentLine.replaceFirst("loadartifact", "").replaceAll("\\s+", "");
@@ -193,6 +199,7 @@ public class DependentMainImplementation {
                                     loaderGraph.enshureJarLoaded(artifactSlashMethod[0]));
                             if(methodAndParams.length>1){
                                 String[] args=Arrays.copyOfRange(methodAndParams, 1, methodAndParams.length) ;
+                                run.addMainArgs(mainArgs);
                                 run.addMainArgs(args);
                             }
                             try{
@@ -339,11 +346,16 @@ public class DependentMainImplementation {
             result = cause;
         }
 
-        if(e!=result){
-            reportTo.println(e.getMessage());
-            reportTo.println(result.getMessage());
+        if(logLevel>=4){
+            e.printStackTrace(reportTo);
         } else {
-            reportTo.println(e.getMessage());
+            if(e!=result){
+                reportTo.println(e.getMessage());
+                reportTo.println(result.getMessage());
+            } else {
+                reportTo.println(e.getMessage());
+            }
         }
+
     };
 }

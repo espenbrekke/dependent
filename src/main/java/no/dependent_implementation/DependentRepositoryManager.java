@@ -82,13 +82,15 @@ public class DependentRepositoryManager {
         List<Dependency> dependencies=descriptorResult.getDependencies();
         List<Artifact> retVal=new LinkedList<Artifact>();
         for (Dependency dependency : dependencies) {
-        	if(isRuntime(dependency)&& !dependency.isOptional())
+        	if(isRuntime(dependency) && !dependency.isOptional())
         		retVal.add(dependency.getArtifact());
 		}
         return retVal;
 	}
 
 	private boolean isRuntime(Dependency dependency) {
+		if(dependency.getArtifact().getClassifier().contains("test")) return false;
+
 		switch (dependency.getScope()) {
 		case "runtime":
 		case "compile":

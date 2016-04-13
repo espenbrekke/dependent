@@ -13,8 +13,19 @@ import no.dependent.DependentLoader;
 import no.dependent.DependentLoaderVisitor;
 import no.dependent_implementation.utils.Booter;
 import no.dependent.DependentLoaderGraph;
+import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
+import org.eclipse.aether.collection.CollectRequest;
+import org.eclipse.aether.graph.Dependency;
+import org.eclipse.aether.graph.DependencyFilter;
+import org.eclipse.aether.repository.RemoteRepository;
+import org.eclipse.aether.resolution.ArtifactResult;
+import org.eclipse.aether.resolution.DependencyRequest;
+import org.eclipse.aether.resolution.DependencyResolutionException;
+import org.eclipse.aether.resolution.DependencyResult;
+import org.eclipse.aether.util.artifact.JavaScopes;
+import org.eclipse.aether.util.filter.DependencyFilterUtils;
 
 class DependentLoaderGraphImplementation implements DependentLoaderGraph{
 	private Set<String> unified=new HashSet<String>(); 
@@ -395,15 +406,17 @@ class DependentLoaderGraphImplementation implements DependentLoaderGraph{
 	}
 
 	public File getAsFile(String resourceId) {
-		Artifact artifactId=new DefaultArtifact(resourceId);
+		return getAsFile(new DefaultArtifact(resourceId));
+	}
 
-        File overrideFile=findOverrideFile(artifactId);
-        if(overrideFile!=null && overrideFile.exists()) return overrideFile;
+	public File getAsFile(Artifact artifactId) {
+		File overrideFile=findOverrideFile(artifactId);
+		if(overrideFile!=null && overrideFile.exists()) return overrideFile;
 
 		Result<File> localFileName=dependencyManager.getLocalFile(artifactId);
 		if(localFileName.success()) return localFileName.val;
 
-        return null;
+		return null;
 	}
 
 	public DependentLoaderImplementation cloneLoader(DependentLoader loader, String aditionalDependency){
@@ -538,4 +551,37 @@ class DependentLoaderGraphImplementation implements DependentLoaderGraph{
 		return dependencyManager.listArtifacts(repository);
 	}
 
+
+
+	public void downloadFlat(String artifact, String copyToDir){
+		try {
+			Artifact theArtifact=new DefaultArtifact(artifact);
+
+			HashSet<Artifact> downloadThese=new HashSet<Artifact>();
+			downloadThese.add(theArtifact);
+			Stack<Artifact> downloadDependenciesOfThese=new Stack<Artifact>();
+			downloadDependenciesOfThese.add(theArtifact);
+
+			while(!downloadDependenciesOfThese.isEmpty()){
+				Artifact getDependenciesOfThis=downloadDependenciesOfThese.pop();
+				List<Artifact> dependencies=dependencyManager.getDirectDependencies(getDependenciesOfThis);
+				for(Artifact a:dependencies){
+					if(!downloadThese.contains(a)){
+						downloadThese.add(a);
+						downloadDependenciesOfThese.add(a);
+					}
+				}
+			}
+
+			File destination=new File(copyToDir);
+			destination.mkdirs();
+
+			for(Artifact a:downloadThese){
+				File theFile=getAsFile(a);
+				Files.copy(theFile.toPath(), new File(destination,theFile.getName() ).toPath());
+			}
+		} catch (Exception e) {
+			DependentMainImplementation.reportError(e);
+		}
+	}
 }

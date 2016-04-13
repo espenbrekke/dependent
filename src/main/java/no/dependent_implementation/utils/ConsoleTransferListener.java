@@ -31,29 +31,16 @@ import org.eclipse.aether.transfer.TransferResource;
 public class ConsoleTransferListener
     extends AbstractTransferListener
 {
-    private PrintStream out;
-
     private Map<TransferResource, Long> downloads = new ConcurrentHashMap<TransferResource, Long>();
 
     private int lastLength;
-
-    public ConsoleTransferListener()
-    {
-        this( null );
-    }
-
-    public ConsoleTransferListener( PrintStream out )
-    {
-        this.out = ( out != null ) ? out : System.out;
-    }
 
     @Override
     public void transferInitiated( TransferEvent event )
     {
         String message = event.getRequestType() == TransferEvent.RequestType.PUT ? "Uploading" : "Downloading";
-        if( (DependentMainImplementation.logLevel>=3) || (event.getResource().getResourceName().endsWith("jar") && (DependentMainImplementation.logLevel>=2))) {
-            out.println(message + ": " + event.getResource().getRepositoryUrl() + event.getResource().getResourceName());
-        }
+        if((event.getResource().getResourceName().endsWith("jar"))) DependentMainImplementation.log2(message + ": " + event.getResource().getRepositoryUrl() + event.getResource().getResourceName());
+        else                                                        DependentMainImplementation.log3(message + ": " + event.getResource().getRepositoryUrl() + event.getResource().getResourceName());
     }
 
     @Override
@@ -78,7 +65,7 @@ public class ConsoleTransferListener
             pad( buffer, pad );
             buffer.append( '\r' );
 
-            out.print( buffer );
+            DependentMainImplementation.log3( buffer.toString() );
         }
     }
 
@@ -135,7 +122,7 @@ public class ConsoleTransferListener
                     throughput = " at " + format.format(kbPerSec) + " KB/sec";
                 }
 
-                out.println(type + ": " + resource.getRepositoryUrl() + resource.getResourceName() + " (" + len
+                DependentMainImplementation.log2(type + ": " + resource.getRepositoryUrl() + resource.getResourceName() + " (" + len
                         + throughput + ")");
             }
         }
@@ -148,7 +135,7 @@ public class ConsoleTransferListener
 
         if ( !( event.getException() instanceof MetadataNotFoundException ) )
         {
-            DependentMainImplementation.reportError(event.getException(), out);
+            DependentMainImplementation.reportError(event.getException());
         }
     }
 
@@ -159,13 +146,13 @@ public class ConsoleTransferListener
             StringBuilder buffer = new StringBuilder(64);
             pad(buffer, lastLength);
             buffer.append('\r');
-            out.print(buffer);
+            DependentMainImplementation.log2(buffer.toString());
         }
     }
 
     public void transferCorrupted( TransferEvent event )
     {
-        DependentMainImplementation.reportError(event.getException(), out);
+        DependentMainImplementation.reportError(event.getException());
     }
 
     protected long toKB( long bytes )
