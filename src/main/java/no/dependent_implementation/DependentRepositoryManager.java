@@ -1,10 +1,7 @@
 package no.dependent_implementation;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.LinkedList;
+import java.util.*;
 
 import no.dependent_implementation.utils.Booter;
 
@@ -132,13 +129,17 @@ public class DependentRepositoryManager {
 		return namedRepos.toArray(retVal);
 	}
 	public String[] listArtifacts(String repository){
+		HashSet<String> artifacts=new HashSet();
+
 		for (int i = 0; i < repositories.length; i++) {
 			if(repository.equals(repositories[i].name)) {
-				return repositories[i].listArtifacts();
+				for(String artifact:repositories[i].listArtifacts()){
+					artifacts.add(artifact);
+				}
 			}
 		}
-
-		return new String[0];
+		String[] retVal=new String[artifacts.size()];
+		return artifacts.toArray(retVal);
 	}
 
 }

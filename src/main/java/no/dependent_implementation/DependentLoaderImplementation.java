@@ -9,6 +9,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
 import no.dependent.DependentLoader;
+import no.dependent.DependentLoaderConfiguration;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
 
@@ -29,6 +30,9 @@ class DependentLoaderImplementation extends DependentLoader {
     public String getArtifact(){
         return artifact.toString();
     }
+
+    private Map<String,DependentLoaderImplementation> configuredChildren=null;
+    private Map<String,DependentLoaderConfiguration> configs=new HashMap();
 
     @Override
     public void extractTo(File targetRoot){
@@ -51,6 +55,10 @@ class DependentLoaderImplementation extends DependentLoader {
         }
     }
 
+    private DependentLoaderConfiguration[] getConfigurations(){
+        Collection<DependentLoaderConfiguration> values=configs.values();
+        return values.toArray(new DependentLoaderConfiguration[values.size()]);
+    }
 
     private static class AddStringVisitor extends SimpleFileVisitor<Path> {
         private final Path fromPath;
@@ -409,6 +417,7 @@ class DependentLoaderImplementation extends DependentLoader {
         this.exposure=exposure;
         this.graph=exposure.getGraph();
         system = getSystemClassLoader();
+        readConfigurations();
         addJarDeclaredDependencies();
 	}
     
@@ -419,6 +428,7 @@ class DependentLoaderImplementation extends DependentLoader {
         this.exposure=exposure;
         this.graph=exposure.getGraph();
         system = getSystemClassLoader();
+        readConfigurations();
         addJarDeclaredDependencies();
 	}
 
@@ -428,7 +438,8 @@ class DependentLoaderImplementation extends DependentLoader {
     	this.parent = parentLoader;
         this.exposure=exposure;
         this.graph=exposure.getGraph();
-    	system = getSystemClassLoader();
+        system = getSystemClassLoader();
+        readConfigurations();
         addJarDeclaredDependencies();
 	}
 
@@ -441,10 +452,12 @@ class DependentLoaderImplementation extends DependentLoader {
         this.exposure=exposure;
         this.graph=exposure.getGraph();
     	system = getSystemClassLoader();
+        readConfigurations();
         addJarDeclaredDependencies();
 	}
 
-    private void addJarDeclaredDependencies(){
+    private void readConfigurations(){
+        int currentConf=0;
         InputStream conf=this.getResourceAsStream("dependent.conf");
         if(conf != null){
             try{
@@ -453,13 +466,43 @@ class DependentLoaderImplementation extends DependentLoader {
                 while ((line = ds.readLine()) != null) // read a line, assign to c, then compare the new value of c to null
                 {
                     String sCurrentLine=DependentMainImplementation.props.replaceProperties(line);
-                    if(sCurrentLine.startsWith("dependency")){
-                        String withoutDependency=sCurrentLine.replaceFirst("dependency", "").replaceFirst("\\s+", "");
-                        addDependency(withoutDependency);
+
+                    String[] lineSplit=sCurrentLine.split("=", 2);
+                    if(lineSplit.length==2){
+                        int lastDot=lineSplit[0].lastIndexOf('.');
+                        String configName="";
+                        String property="";
+                        if(lastDot==-1){
+                            property=lineSplit[0];
+                        } else {
+                            configName=lineSplit[0].substring(0,lastDot);
+                            property=lineSplit[0].substring(lastDot+1);
+                        }
+                        if("_".equals(configName)){
+                            currentConf++;
+                            configName=Integer.toString(currentConf);
+                        } else if("|".equals(configName)){
+                            configName=Integer.toString(currentConf);
+                        }
+
+                        String value=lineSplit[1];
+
+                        DependentLoaderConfiguration changeThis=configs.get(configName);
+                        if(changeThis==null)changeThis=new DependentLoaderConfiguration(configName);
+                        configs.put(configName, changeThis.add(property,value.trim().replace("\"","")));
                     }
                 }
             } catch (Exception e){
 
+            }
+        }
+    }
+
+    private void addJarDeclaredDependencies(){
+        DependentLoaderConfiguration defaultConf=configs.get("");
+        if(defaultConf!=null){
+            for(String dependency:defaultConf.get("dependency")){
+                addDependency(dependency);
             }
         }
     }
@@ -757,4 +800,26 @@ class DependentLoaderImplementation extends DependentLoader {
 	void setDependencies(DependentLoaderImplementation[] actualDependencies) {
 		this.dependencies=actualDependencies;
 	}
+
+    public DependentLoaderImplementation getConfigured(String configName) {
+        DependentLoaderConfiguration config=configs.get(configName);
+        if(config==null) return null;
+
+        synchronized (configs) {
+            if(configuredChildren==null) configuredChildren=new HashMap();
+
+            DependentLoaderImplementation configuredLoader=configuredChildren.get(configName);
+            DependentLoaderImplementation other=configuredLoader;
+            if(other==null)other=new DependentLoaderImplementation(artifact,this.getURLs(), exposure,parent);
+            other.setDependencies(this.dependencies);
+            for(String dependency:config.get("dependency")){
+                DependentLoaderImplementation depLoder=graph.enshureJarLoaded(dependency);
+                if(depLoder!=null){
+                    other.addDependency(depLoder);
+                }
+            }
+            if(configuredLoader==null) configuredChildren.put(configName, other);
+            return other;
+        }
+    }
 }

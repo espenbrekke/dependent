@@ -70,6 +70,7 @@ public class DependentRepository {
 
     public String[] listArtifacts(){
         LinkedList<String> retVal=new LinkedList<String>();
+        if(root==null || (!root.exists()) || (!root.isDirectory())) return new String[0];
         File[] contains=root.listFiles();
         for(File sub:contains){
             if(sub.isDirectory()){
