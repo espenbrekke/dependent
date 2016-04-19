@@ -101,26 +101,25 @@ public class DependentMainImplementation {
                 try{
                     System.out.println(sCurrentLine);
                     if(sCurrentLine.startsWith("artifactsource")){
-                        String artifactsource=sCurrentLine.replaceFirst("artifactsource\\s+", "").replaceAll("\\s+", " ");
+                        String artifactsource=sCurrentLine.replaceFirst("artifactsource", " ").replaceFirst("\\s+", "");
                         String[] artifactsourceParts=artifactsource.split("\\s+");
-                        String artifactsourceUrl="";
-                        String repoPath="";
-                        if(artifactsourceParts.length>1){
-                            String groupFilter="";
-                            if(artifactsourceParts.length>2) groupFilter=artifactsourceParts[2];
 
-                            artifactsourceUrl=artifactsourceParts[0];
-                            repoPath=artifactsourceParts[1];
-                            dependencyManager.addSource(artifactsourceUrl, repoPath, groupFilter, artifactsourceParts);
+                        String artifactsourceUrl=get(artifactsourceParts, 0);
+                        String repoPath=get(artifactsourceParts, 1);
+                        String repoName=get(artifactsourceParts, 2);
+                        String groupFilter=get(artifactsourceParts, 3);
+
+                        if(!("".equals(artifactsourceUrl) || "".equals(repoPath))){
+                            dependencyManager.addSource(artifactsourceUrl,repoName, repoPath, groupFilter, artifactsourceParts);
                         }
                     } else if(sCurrentLine.startsWith("localstore")){
                         String wothoutLocalstore=sCurrentLine.replaceFirst("localstore\\s+", "");
-                        String[] fileThenName = wothoutLocalstore.split("\\s+", 2);
-                        if(fileThenName.length==2){
-                            dependencyManager.addLocalStore(fileThenName[0],fileThenName[1], "");
-                        } else {
-                            dependencyManager.addLocalStore(fileThenName[0],fileThenName[1], fileThenName[2]);
-                        }
+                        String[] fileThenName = wothoutLocalstore.split("\\s+");
+
+                        String repoPath=get(fileThenName, 0);
+                        String repoName=get(fileThenName, 1);
+                        String groupFilter=get(fileThenName, 2);
+                        dependencyManager.addLocalStore(repoPath,fileThenName[1], groupFilter);
 
                     } else if(sCurrentLine.startsWith("include")){
                         String withoutInclude=sCurrentLine.replaceFirst("include", "").replaceFirst("\\s+", "");
@@ -175,11 +174,21 @@ public class DependentMainImplementation {
                     if(sCurrentLine.startsWith("get")){
                         String toGet=sCurrentLine.replaceFirst("get", "").replaceAll("\\s+", "");
                         loaderGraph.getJar(toGet);
-                    }  else
+                    } if(sCurrentLine.startsWith("copy")){
+                        String[] copyParams=sCurrentLine.replaceFirst("copy", " ").replaceFirst("\\s+", "").split("\\s+");
+
+                        if(copyParams.length>=2){
+                            String fromRepo=copyParams[0];
+                            String toRepo=copyParams[1];
+                            String filter="";
+                            if(copyParams.length>2) filter=copyParams[2];
+                            loaderGraph.copy(fromRepo, toRepo, filter);
+                        }
+                    }   else
                     if(sCurrentLine.startsWith("download_flat")){
                         String[] whatWhereFlags=sCurrentLine.replaceFirst("download_flat", " ").replaceFirst("\\s+", "").split("\\s+");
                         if(whatWhereFlags.length>1){
-                            loaderGraph.downloadFlat(whatWhereFlags[0],whatWhereFlags[1]);
+                            loaderGraph.downloadFlat(whatWhereFlags[0], whatWhereFlags[1]);
                         }
                     } else
                     if(sCurrentLine.startsWith("loadartifact")){
@@ -358,4 +367,10 @@ public class DependentMainImplementation {
         }
 
     };
+
+    private static String get(String[] strings, int index){
+        if(index<strings.length){
+            return strings[index];
+        }else return "";
+    }
 }

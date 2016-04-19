@@ -20,6 +20,8 @@ public class DependentRepository {
     final public RepositorySystemSession session;
     final public String groupFilter;
 
+    private RemoteRepository asRemote=null;
+
     private RepositorySystem system = Booter.newRepositorySystem();
 
     public boolean canResolve(Artifact artifact){
@@ -52,6 +54,27 @@ public class DependentRepository {
             artifactRequest.setRepositories(listOfSingleSource);
         }
         artifactResult = system.resolveArtifact(session, artifactRequest);
+        return artifactResult;
+    }
+
+    public RemoteRepository asRemote(){
+        try{
+            if(asRemote==null){
+                String[] params={"CHECKSUM_POLICY_IGNORE"};
+                asRemote=Booter.newRepository("remote-maven", root.getAbsoluteFile().toURI().toURL().toString(), params);
+            }
+        } catch (Throwable t){
+            DependentMainImplementation.reportError(t);
+        }
+        return asRemote;
+    }
+
+    public ArtifactResult resolveArtifactFrom(Artifact artifact, DependentRepository from) throws ArtifactResolutionException {
+        ArtifactRequest artifactRequest = new ArtifactRequest();
+        artifactRequest.setArtifact(artifact);
+        artifactRequest.addRepository(from.asRemote());
+
+        ArtifactResult artifactResult = system.resolveArtifact(session, artifactRequest);
         return artifactResult;
     }
 

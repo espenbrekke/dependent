@@ -8,6 +8,7 @@ import no.dependent_implementation.utils.Booter;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.artifact.Artifact;
+import org.eclipse.aether.artifact.DefaultArtifact;
 import org.eclipse.aether.graph.Dependency;
 import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.resolution.ArtifactDescriptorException;
@@ -112,9 +113,9 @@ public class DependentRepositoryManager {
 		repositories=newArray;
 	}
 
-	public void addSource(String artifactsourceUrl, String localStore, String groupFilter, String[] definition) {
+	public void addSource(String artifactsourceUrl, String name, String localStore, String groupFilter, String[] definition) {
 		DependentRepository[] newArray=Arrays.copyOf(repositories,repositories.length+1) ;
-		newArray[newArray.length-1]=new DependentRepository(new File(localStore), artifactsourceUrl, "", groupFilter, definition);
+		newArray[newArray.length-1]=new DependentRepository(new File(localStore), artifactsourceUrl, name, groupFilter, definition);
 		repositories=newArray;
 	}
 
@@ -140,6 +141,40 @@ public class DependentRepositoryManager {
 		}
 		String[] retVal=new String[artifacts.size()];
 		return artifacts.toArray(retVal);
+	}
+
+	public void copy(String fromRepo,String toRepo,String filter) throws ArtifactResolutionException{
+		DependentRepository copyTo=null;
+		List<DependentRepository> copyFrom=new LinkedList();
+		for (int i = 0; i < repositories.length; i++) {
+			if(fromRepo.equals(repositories[i].name)) {
+				copyFrom.add(repositories[i]);
+			}
+			if(toRepo.equals(repositories[i].name)) {
+				copyTo=repositories[i];
+			}
+		}
+
+		if(copyTo==null){
+			DependentMainImplementation.reportError(new IllegalArgumentException("Unknown repository: "+toRepo));
+		}
+		if(copyFrom.size()==0){
+			DependentMainImplementation.reportError(new IllegalArgumentException("Unknown repository: "+fromRepo));
+		}
+		if(copyTo==null || copyFrom.size()==0){
+			return;
+		}
+
+		for(DependentRepository fromThis:copyFrom){
+			String[] fromArtifacts=fromThis.listArtifacts();
+			for(String singleArtifact:fromArtifacts){
+				Artifact artifact=new DefaultArtifact(singleArtifact);
+				if(singleArtifact.startsWith(filter)){
+					copyTo.resolveArtifactFrom(artifact, fromThis);
+				}
+			}
+		}
+
 	}
 
 }
