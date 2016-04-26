@@ -6,6 +6,7 @@ import no.dependent_implementation.utils.Booter;
 import java.io.*;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
@@ -177,12 +178,13 @@ public class DependentMainImplementation {
                     } if(sCurrentLine.startsWith("copy")){
                         String[] copyParams=sCurrentLine.replaceFirst("copy", " ").replaceFirst("\\s+", "").split("\\s+");
 
-                        if(copyParams.length>=2){
-                            String fromRepo=copyParams[0];
-                            String toRepo=copyParams[1];
-                            String filter="";
-                            if(copyParams.length>2) filter=copyParams[2];
-                            loaderGraph.copy(fromRepo, toRepo, filter);
+                        String fromRepo=get(copyParams,0);
+                        String toRepo=get(copyParams,1);
+                        String filter=get(copyParams,2);
+                        String[] flags=getFlags(copyParams);
+
+                        if(!"".equals(fromRepo) && !"".equals(toRepo)){
+                            loaderGraph.copy(fromRepo, toRepo, filter, flags);
                         }
                     }   else
                     if(sCurrentLine.startsWith("download_flat")){
@@ -373,4 +375,13 @@ public class DependentMainImplementation {
             return strings[index];
         }else return "";
     }
+
+    private static String[] getFlags(String[] strings){
+        ArrayList<String> flags=new ArrayList<>();
+        for(String check:strings){
+            if(check.startsWith("-")) flags.add(check.toLowerCase());
+        }
+        return flags.toArray(new String[flags.size()]);
+    }
+
 }

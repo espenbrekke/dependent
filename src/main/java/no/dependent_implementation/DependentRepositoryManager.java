@@ -1,8 +1,15 @@
 package no.dependent_implementation;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStream;
 import java.util.*;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
+import java.util.zip.ZipInputStream;
 
+import no.dependent.DependentLoader;
+import no.dependent.DependentLoaderConfiguration;
 import no.dependent_implementation.utils.Booter;
 
 import org.eclipse.aether.RepositorySystem;
@@ -143,7 +150,7 @@ public class DependentRepositoryManager {
 		return artifacts.toArray(retVal);
 	}
 
-	public void copy(String fromRepo,String toRepo,String filter) throws ArtifactResolutionException{
+	public void copy(String fromRepo,String toRepo,String filter, Boolean includeConfigDependencies) throws ArtifactResolutionException{
 		DependentRepository copyTo=null;
 		List<DependentRepository> copyFrom=new LinkedList();
 		for (int i = 0; i < repositories.length; i++) {
@@ -170,7 +177,40 @@ public class DependentRepositoryManager {
 			for(String singleArtifact:fromArtifacts){
 				Artifact artifact=new DefaultArtifact(singleArtifact);
 				if(singleArtifact.startsWith(filter)){
-					copyTo.resolveArtifactFrom(artifact, fromThis);
+					ArtifactResult result=copyTo.resolveArtifactFrom(artifact, fromThis);
+					if(includeConfigDependencies){
+						File artifactFile=result.getArtifact().getFile();
+						if(artifactFile!=null && artifactFile.exists() && artifactFile.getName().endsWith("jar")){
+							ZipFile zf=null;
+							InputStream dependentInputStream=null;
+							try{
+								zf=new ZipFile(artifactFile);
+								ZipEntry dependentEntry=zf.getEntry("dependent.conf");
+								dependentInputStream=zf.getInputStream(dependentEntry);
+
+								Map<String,DependentLoaderConfiguration> confs=DependentLoaderImplementation.parseConfig(dependentInputStream);
+								for(DependentLoaderConfiguration conf:confs.values()){
+									for(String dependency:conf.get("dependency")){
+										try{
+											Artifact dependencyArtifact=new DefaultArtifact(dependency);
+											this.resolveArtifact(dependencyArtifact);
+										} catch (Throwable t) {
+											DependentMainImplementation.reportError(t);
+										}
+									}
+								}
+							} catch (Throwable t) {
+								DependentMainImplementation.reportError(t);
+							} finally{
+								try{
+									if(zf!=null) zf.close();
+									if(dependentInputStream!=null) dependentInputStream.close();
+								} catch (Throwable t) {
+									DependentMainImplementation.reportError(t);
+								}
+							}
+						}
+					}
 				}
 			}
 		}

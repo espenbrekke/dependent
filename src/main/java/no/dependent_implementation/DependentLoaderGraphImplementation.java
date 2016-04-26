@@ -582,7 +582,11 @@ class DependentLoaderGraphImplementation implements DependentLoaderGraph{
 		}
 	}
 
-	public void copy(String fromRepo,String toRepo,String filter)  throws ArtifactResolutionException {
-		dependencyManager.copy(fromRepo,toRepo,filter);
+	public void copy(String fromRepo,String toRepo,String filter, String[] flags)  throws ArtifactResolutionException {
+		Boolean includeConfigDependencies=false;
+		for(String flag:flags){
+			if("-includeconfig".equals(flag)) includeConfigDependencies=true;
+		}
+		dependencyManager.copy(fromRepo,toRepo,filter, includeConfigDependencies);
 	}
 }

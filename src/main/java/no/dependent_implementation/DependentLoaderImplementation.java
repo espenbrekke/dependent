@@ -55,7 +55,8 @@ class DependentLoaderImplementation extends DependentLoader {
         }
     }
 
-    private DependentLoaderConfiguration[] getConfigurations(){
+    @Override
+    public DependentLoaderConfiguration[] getConfigurations(){
         Collection<DependentLoaderConfiguration> values=configs.values();
         return values.toArray(new DependentLoaderConfiguration[values.size()]);
     }
@@ -457,15 +458,29 @@ class DependentLoaderImplementation extends DependentLoader {
 	}
 
     private void readConfigurations(){
+        InputStream conf=null;
+        try{
+            conf=this.getResourceAsStream("dependent.conf");
+            if(conf!=null) configs=parseConfig(conf);
+        } finally {
+            try{
+                if(conf!=null) conf.close();
+            } catch (Throwable t){
+
+            }
+        }
+    }
+
+    public static Map<String,DependentLoaderConfiguration> parseConfig(InputStream conf) {
         int currentConf=0;
-        InputStream conf=this.getResourceAsStream("dependent.conf");
+        Map<String,DependentLoaderConfiguration> result=new HashMap<String,DependentLoaderConfiguration>();
         if(conf != null){
             try{
                 BufferedReader ds = new BufferedReader(new InputStreamReader(conf, "UTF-8"));
                 String line;
                 while ((line = ds.readLine()) != null) // read a line, assign to c, then compare the new value of c to null
                 {
-                    String sCurrentLine=DependentMainImplementation.props.replaceProperties(line);
+                    String sCurrentLine= DependentMainImplementation.props.replaceProperties(line);
 
                     String[] lineSplit=sCurrentLine.split("=", 2);
                     if(lineSplit.length==2){
@@ -487,15 +502,16 @@ class DependentLoaderImplementation extends DependentLoader {
 
                         String value=lineSplit[1];
 
-                        DependentLoaderConfiguration changeThis=configs.get(configName);
+                        DependentLoaderConfiguration changeThis=result.get(configName);
                         if(changeThis==null)changeThis=new DependentLoaderConfiguration(configName);
-                        configs.put(configName, changeThis.add(property,value.trim().replace("\"","")));
+                        result.put(configName, changeThis.add(property,value.trim().replace("\"","")));
                     }
                 }
             } catch (Exception e){
 
             }
         }
+        return result;
     }
 
     private void addJarDeclaredDependencies(){
@@ -801,7 +817,8 @@ class DependentLoaderImplementation extends DependentLoader {
 		this.dependencies=actualDependencies;
 	}
 
-    public DependentLoaderImplementation getConfigured(String configName) {
+    @Override
+    public DependentLoader getConfigured(String configName) {
         DependentLoaderConfiguration config=configs.get(configName);
         if(config==null) return null;
 

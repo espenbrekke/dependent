@@ -31,4 +31,6 @@ public abstract class DependentLoader extends URLClassLoader {
     public abstract void extractTo(File target);
 
     public abstract Set<String> getEntries();
+    public abstract DependentLoaderConfiguration[] getConfigurations();
+    public abstract DependentLoader getConfigured(String configName);
 }
