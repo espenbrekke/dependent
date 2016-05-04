@@ -11,18 +11,10 @@ import java.util.Map.Entry;
 
 import no.dependent.DependentLoader;
 import no.dependent.DependentLoaderVisitor;
-import no.dependent_implementation.utils.Booter;
 import no.dependent.DependentLoaderGraph;
-import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
-import org.eclipse.aether.collection.CollectRequest;
-import org.eclipse.aether.graph.Dependency;
-import org.eclipse.aether.graph.DependencyFilter;
-import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.resolution.*;
-import org.eclipse.aether.util.artifact.JavaScopes;
-import org.eclipse.aether.util.filter.DependencyFilterUtils;
 
 class DependentLoaderGraphImplementation implements DependentLoaderGraph{
 	private Set<String> unified=new HashSet<String>(); 
@@ -67,7 +59,7 @@ class DependentLoaderGraphImplementation implements DependentLoaderGraph{
 			try {
 				v.visitLoader(theLoader);
 			} catch (Throwable e){
-				DependentMainImplementation.reportError(e);
+				OutputBouble.reportError(e);
 			}
 		}
 	}
@@ -196,7 +188,7 @@ class DependentLoaderGraphImplementation implements DependentLoaderGraph{
 					}
 				}
 			} catch (Exception e) {
-				DependentMainImplementation.reportError(e);
+				OutputBouble.reportError(e);
 			}
 		}
 		visitLoader(theLoader);
@@ -214,6 +206,11 @@ class DependentLoaderGraphImplementation implements DependentLoaderGraph{
 			return enshureJarLoaded(unify(dependent,dependency));
 	}
 
+	@Override
+	public DependentLoaderImplementation findOverride(String artifactId){
+		Artifact artifact=new DefaultArtifact(artifactId);
+		return findOverride(artifact);
+	}
     public DependentLoaderImplementation findOverride(Artifact artifactId){
         if(overridingLoaders.size()==0) return null;
         String asString=artifactId.toString();
@@ -286,9 +283,9 @@ class DependentLoaderGraphImplementation implements DependentLoaderGraph{
 				
 				DependentLoaderImplementation loader=enshureDependencyJarLoaded(artifactId,dependencyId);
 				if(loader==null){
-                    Booter.logFile.println(artifactId.toString() + ":");
-                    Booter.logFile.println("\t Missing dependency "+dependencyId.toString());
-                    Booter.logFile.println("\t Ignoring");
+                    OutputBouble.logFile.println(artifactId.toString() + ":");
+                    OutputBouble.logFile.println("\t Missing dependency "+dependencyId.toString());
+                    OutputBouble.logFile.println("\t Ignoring");
 				} else {
                     actualDependencies[i++] = loader;
                 }
@@ -304,7 +301,7 @@ class DependentLoaderGraphImplementation implements DependentLoaderGraph{
 			visitLoader(theLoader);
 			return theLoader;
 		} catch (Exception e) {
-			DependentMainImplementation.reportError(e, Booter.logFile);
+			OutputBouble.reportError(e);
 			return theLoader;
 		}
 		//return null;
@@ -345,7 +342,7 @@ class DependentLoaderGraphImplementation implements DependentLoaderGraph{
 				}
 			}
 		} catch (Exception e) {
-			DependentMainImplementation.reportError(e);
+			OutputBouble.reportError(e);
 		}
 	}
 		
@@ -366,7 +363,7 @@ class DependentLoaderGraphImplementation implements DependentLoaderGraph{
 			writer.println("}");
 			writer.close();
 		} catch (Exception e) {
-			DependentMainImplementation.reportError(e);
+			OutputBouble.reportError(e);
 		}
 	}
 	
@@ -484,7 +481,7 @@ class DependentLoaderGraphImplementation implements DependentLoaderGraph{
             try {
                 Files.walkFileTree(archiveFile.toPath(), new CopyDirVisitor(archiveFile,destination));
             } catch (Exception e){
-				DependentMainImplementation.reportError(e);
+				OutputBouble.reportError(e);
             }
 
         } else if(archiveFile.getName().endsWith("jar")) {
@@ -578,7 +575,7 @@ class DependentLoaderGraphImplementation implements DependentLoaderGraph{
 				Files.copy(theFile.toPath(), new File(destination,theFile.getName() ).toPath());
 			}
 		} catch (Exception e) {
-			DependentMainImplementation.reportError(e);
+			OutputBouble.reportError(e);
 		}
 	}
 

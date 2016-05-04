@@ -1,27 +1,17 @@
 package no.dependent_implementation;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.InputStream;
 import java.util.*;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
-import java.util.zip.ZipInputStream;
 
-import no.dependent.DependentLoader;
 import no.dependent.DependentLoaderConfiguration;
-import no.dependent_implementation.utils.Booter;
 
-import org.eclipse.aether.RepositorySystem;
-import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
 import org.eclipse.aether.graph.Dependency;
-import org.eclipse.aether.repository.RemoteRepository;
-import org.eclipse.aether.resolution.ArtifactDescriptorException;
-import org.eclipse.aether.resolution.ArtifactDescriptorRequest;
 import org.eclipse.aether.resolution.ArtifactDescriptorResult;
-import org.eclipse.aether.resolution.ArtifactRequest;
 import org.eclipse.aether.resolution.ArtifactResolutionException;
 import org.eclipse.aether.resolution.ArtifactResult;
 
@@ -32,19 +22,31 @@ public class DependentRepositoryManager {
 			Artifact artifact) throws Exception {
 		Exception ex=null;
 
+		List<OutputBouble> errorBoubles=new LinkedList<>();
 		for(DependentRepository repository:repositories){
+			OutputBouble bouble=OutputBouble.push();
+			errorBoubles.add(bouble);
 			try{
 				if(repository.canResolve(artifact)){
 					ArtifactResult result=repository.resolveArtifact(artifact);
 
-					if((result!=null) && (!result.isMissing()))
+					if((result!=null) && (!result.isMissing())){
+						for(OutputBouble b:errorBoubles){
+							b.close();
+						}
 						return result;
+					}
 				}
 			} catch (Exception e){
 				ex=e;
 			}
+			bouble.pop();
 		}
 
+		if(!errorBoubles.isEmpty()) errorBoubles.get(0).writeToParent();
+		for(OutputBouble bouble:errorBoubles){
+			bouble.close();
+		}
 		throw new Exception("unable to resolve artifact: "+artifact.getArtifactId(), ex);
 	}
 
@@ -163,10 +165,10 @@ public class DependentRepositoryManager {
 		}
 
 		if(copyTo==null){
-			DependentMainImplementation.reportError(new IllegalArgumentException("Unknown repository: "+toRepo));
+			OutputBouble.reportError(new IllegalArgumentException("Unknown repository: " + toRepo));
 		}
 		if(copyFrom.size()==0){
-			DependentMainImplementation.reportError(new IllegalArgumentException("Unknown repository: "+fromRepo));
+			OutputBouble.reportError(new IllegalArgumentException("Unknown repository: " + fromRepo));
 		}
 		if(copyTo==null || copyFrom.size()==0){
 			return;
@@ -195,18 +197,18 @@ public class DependentRepositoryManager {
 											Artifact dependencyArtifact=new DefaultArtifact(dependency);
 											this.resolveArtifact(dependencyArtifact);
 										} catch (Throwable t) {
-											DependentMainImplementation.reportError(t);
+											OutputBouble.reportError(t);
 										}
 									}
 								}
 							} catch (Throwable t) {
-								DependentMainImplementation.reportError(t);
+								OutputBouble.reportError(t);
 							} finally{
 								try{
 									if(zf!=null) zf.close();
 									if(dependentInputStream!=null) dependentInputStream.close();
 								} catch (Throwable t) {
-									DependentMainImplementation.reportError(t);
+									OutputBouble.reportError(t);
 								}
 							}
 						}

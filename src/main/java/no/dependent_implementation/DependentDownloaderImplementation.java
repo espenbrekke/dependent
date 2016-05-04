@@ -68,7 +68,7 @@ public class DependentDownloaderImplementation implements DependentDownloader {
 			artifactResults = resolvedDependencies.getArtifactResults();
 
 		} catch (DependencyResolutionException e) {
-            DependentMainImplementation.reportError(e);
+            OutputBouble.reportError(e);
 		}
 	}
 	
@@ -106,9 +106,9 @@ public class DependentDownloaderImplementation implements DependentDownloader {
 				Files.copy(from.toPath(), to.toPath(), StandardCopyOption.REPLACE_EXISTING);
 			}
 		} catch (DependencyResolutionException e) {
-            DependentMainImplementation.reportError(e);
+            OutputBouble.reportError(e);
 		} catch (IOException e) {
-            DependentMainImplementation.reportError(e);
+            OutputBouble.reportError(e);
 		}
 	}
 
@@ -169,9 +169,9 @@ public class DependentDownloaderImplementation implements DependentDownloader {
             if(!"".equals(whileDoing)){
                 System.out.println("While: "+whileDoing);
             }
-            DependentMainImplementation.reportError(e);
+            OutputBouble.reportError(e);
 		} catch (Exception e) {
-            DependentMainImplementation.reportError(e);		}
+            OutputBouble.reportError(e);		}
 		return null;
 	}
 	
@@ -202,9 +202,9 @@ public class DependentDownloaderImplementation implements DependentDownloader {
             if(!"".equals(whileDoing)){
                 System.out.println("While: "+whileDoing);
             }
-            DependentMainImplementation.reportError(e);
+            OutputBouble.reportError(e);
         } catch (Exception e) {
-            DependentMainImplementation.reportError(e);
+            OutputBouble.reportError(e);
         }
         return null;
     }
@@ -240,7 +240,7 @@ public class DependentDownloaderImplementation implements DependentDownloader {
             zipFile.close();
         }
         catch (Exception e) {
-            DependentMainImplementation.reportError(e);
+            OutputBouble.reportError(e);
         }
 
 

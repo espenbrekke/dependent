@@ -9,7 +9,6 @@ import org.eclipse.aether.resolution.*;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -64,7 +63,7 @@ public class DependentRepository {
                 asRemote=Booter.newRepository("remote-maven", root.getAbsoluteFile().toURI().toURL().toString(), params);
             }
         } catch (Throwable t){
-            DependentMainImplementation.reportError(t);
+            OutputBouble.reportError(t);
         }
         return asRemote;
     }

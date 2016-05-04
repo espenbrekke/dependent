@@ -11,14 +11,10 @@ import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
-/**
- * Created by espen on 11/26/14.
- */
 public class DependentMainImplementation {
+    public static int logLevel=1;
     private static DependentLoaderGraphImplementation loaderGraph=(DependentLoaderGraphImplementation)DependentFactory.get().getGraph();// DependentLoaderGraphImplementation.create(dependencyManager, DependentMain.class.getClassLoader());
     private static DependentRepositoryManager dependencyManager=loaderGraph.dependencyManager;
-
-    private static int numberOfFErrors=0;
 
     public static void main(String[] args) {
         String configFileName="dependent.conf";
@@ -49,7 +45,7 @@ public class DependentMainImplementation {
 
 
     public static boolean executeScript(List<String> script, String[] args){
-        numberOfFErrors=0;
+        OutputBouble.numberOfFErrors=0;
         return readConfig(script, args);
     };
 
@@ -74,7 +70,6 @@ public class DependentMainImplementation {
     }
 
     static PropertiesEngine props=new PropertiesEngine();
-    public static int logLevel=1;
 
     private static boolean readConfig(List<String> configFileContent,String[] mainArgs){
         boolean success=true;
@@ -142,7 +137,7 @@ public class DependentMainImplementation {
                     } else if(sCurrentLine.startsWith("noredirect")){
                         System.setOut(sysOut);
                         System.setErr(sysErr);
-                        Booter.logFile=System.out;
+                        OutputBouble.logFile=System.out;
                     } else if(sCurrentLine.startsWith("failOnError")){
                         String withoutFailOnError=sCurrentLine.replaceFirst("failOnError", "").replaceFirst("\\s+", "");
                         failOnError=1;
@@ -216,7 +211,7 @@ public class DependentMainImplementation {
                             try{
                                 run.run();
                             } catch (Throwable t){
-                                DependentMainImplementation.reportError(t);
+                                OutputBouble.reportError(t);
                                 success=false;
                             }
                         }
@@ -253,11 +248,11 @@ public class DependentMainImplementation {
                         }
                     }
 
-                    if((failOnError!=0) && (numberOfFErrors>=failOnError)){
+                    if((failOnError!=0) && (OutputBouble.numberOfFErrors>=failOnError)){
                         return false;
                     }
                 } catch (Exception e){
-                    e.printStackTrace(Booter.logFile);
+                    e.printStackTrace(OutputBouble.logFile);
                 }
             }
         }
@@ -276,10 +271,10 @@ public class DependentMainImplementation {
                     br.close();
             } catch (IOException ex)
             {
-                DependentMainImplementation.reportError(ex);
+                OutputBouble.reportError(ex);
             }
         }
-        return success || (numberOfFErrors==0);
+        return success || (OutputBouble.numberOfFErrors==0);
     }
 
 
@@ -314,61 +309,6 @@ public class DependentMainImplementation {
         }
         return what;
     }
-
-
-    public static void log2(String what){
-        if(logLevel>=2){
-            Booter.logFile.println(what);
-        }
-    }
-    public static void log3(String what){
-        if(logLevel>=2){
-            Booter.logFile.println(what);
-        }
-    }
-
-    public static void reportError(String preMessage, Throwable e){
-        numberOfFErrors+=1;
-        report(preMessage, e);
-    };
-    public static void reportError(Throwable e){
-        numberOfFErrors+=1;
-        report(e, Booter.logFile);
-    };
-    public static void reportError(Throwable e, PrintStream reportTo) {
-        numberOfFErrors+=1;
-        report(e, reportTo);
-    }
-
-    public static void report(String preMessage, Throwable e){
-        Booter.logFile.println(preMessage);
-        report(e, Booter.logFile);
-    };
-
-    public static void report(Throwable e){
-        report(e, Booter.logFile);
-    };
-
-    public static void report(Throwable e, PrintStream reportTo){
-        Throwable cause = null;
-        Throwable result = e;
-
-        while(null != (cause = result.getCause())  && (result != cause) ) {
-            result = cause;
-        }
-
-        if(logLevel>=4){
-            e.printStackTrace(reportTo);
-        } else {
-            if(e!=result){
-                reportTo.println(e.getMessage());
-                reportTo.println(result.getMessage());
-            } else {
-                reportTo.println(e.getMessage());
-            }
-        }
-
-    };
 
     private static String get(String[] strings, int index){
         if(index<strings.length){

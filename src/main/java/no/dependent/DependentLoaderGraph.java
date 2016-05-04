@@ -6,15 +6,16 @@ import java.net.URL;
 
 public interface DependentLoaderGraph {
 	public DependentLoader nameArtifact(String artifactId, URL[] jar, Object... dependsOn);
-	public DependentLoader nameArtifact(Artifact artifactId, URL[] jar, Object... dependsOn);
+//	public DependentLoader nameArtifact(Artifact artifactId, URL[] jar, Object... dependsOn);
 	public void nameClassLoader(String artifactId, ClassLoader loader, boolean recursive);
-	public void nameClassLoader(Artifact artifactId, ClassLoader loader,boolean recursive);
+//	public void nameClassLoader(Artifact artifactId, ClassLoader loader,boolean recursive);
 	public DependentLoader enshureJarLoaded(String artifactId);
-    public DependentLoader findOverride(Artifact artifactId);
+	public DependentLoader findOverride(String artifactId);
+//	public DependentLoader findOverride(Artifact artifactId);
     public DependentLoader[] getLoaded(String filter);
-    public DependentLoader enshureJarLoaded(Artifact artifactId);
+//    public DependentLoader enshureJarLoaded(Artifact artifactId);
     public void getJar(String artifactId);
-	public void getJar(Artifact artifactId);
+//	public void getJar(Artifact artifactId);
 	public void logGraph(String logFile) ;
 	public void connect(String connectThis, String toThis) ;
 	public File getAsFile(String resourceId) ;

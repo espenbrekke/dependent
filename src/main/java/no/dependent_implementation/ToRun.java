@@ -38,7 +38,7 @@ class ToRun{
             methodToRun.invoke(null, (Object)mainParams);
 
         } catch (Throwable e) {
-            DependentMainImplementation.reportError(e);
+            OutputBouble.reportError(e);
         }
     }
 

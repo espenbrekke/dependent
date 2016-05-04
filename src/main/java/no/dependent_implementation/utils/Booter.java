@@ -4,7 +4,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.PrintStream;
 
-import no.dependent_implementation.DependentMainImplementation;
+import no.dependent_implementation.OutputBouble;
 import no.dependent_implementation.manual.ManualRepositorySystemFactory;
 
 import org.apache.maven.repository.internal.MavenRepositorySystemUtils;
@@ -20,12 +20,11 @@ import org.eclipse.aether.repository.RepositoryPolicy;
 public class Booter
 {
 
-    static public PrintStream logFile;
     static public ProxyOutputStream proxy = new ProxyOutputStream();
     static public File logPlacement = new File(".");
     static {
         try {
-            logFile = new PrintStream(proxy);
+            OutputBouble.logFile = new PrintStream(proxy);
         } catch (Exception e){
             //e.printStackTrace();
         }
