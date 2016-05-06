@@ -315,7 +315,9 @@ class DependentLoaderGraphImplementation implements DependentLoaderGraph{
 		for (Entry<String,String> unification : unified.entrySet()) {
 			String groupFilter=unification.getKey();
 			String version=unification.getValue();
-			if(artifact.getGroupId().startsWith(groupFilter) && (!"".equals(version))){
+			String artifactId=artifact.toString();
+
+			if(artifactId.startsWith(groupFilter) && (!"".equals(version))){
 				Artifact retVal=new DefaultArtifact(
 						artifact.getGroupId(),
 						artifact.getArtifactId(),
@@ -334,10 +336,12 @@ class DependentLoaderGraphImplementation implements DependentLoaderGraph{
 		for (Entry<String,String> unification : unified.entrySet()) {
 			String groupFilter=unification.getKey();
 			String version=unification.getValue();
+			String artifactId=dependency.toString();
+
 			if("".equals(version) ){
 				version=dependent.getVersion();
 			}
-			if(dependency.getGroupId().startsWith(groupFilter)){
+			if(artifactId.startsWith(groupFilter)){
 				Artifact retVal=new DefaultArtifact(
 						dependency.getGroupId(),
 						dependency.getArtifactId(),
