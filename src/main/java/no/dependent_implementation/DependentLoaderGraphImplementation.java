@@ -257,7 +257,9 @@ class DependentLoaderGraphImplementation implements DependentLoaderGraph{
     }
 
 
-    public DependentLoaderImplementation enshureJarLoaded(Artifact artifactId){
+    public DependentLoaderImplementation enshureJarLoaded(Artifact _artifactId){
+		Artifact artifactId=unify(_artifactId);
+
         if("dependent".equals(artifactId.getArtifactId()) && "no.dbwatch".equals(artifactId.getGroupId())){
             return null;
         }
@@ -306,15 +308,36 @@ class DependentLoaderGraphImplementation implements DependentLoaderGraph{
 		}
 		//return null;
 	}
-	
+
+
+
+	private Artifact unify(Artifact artifact){
+		for (Entry<String,String> unification : unified.entrySet()) {
+			String groupFilter=unification.getKey();
+			String version=unification.getValue();
+			if(artifact.getGroupId().startsWith(groupFilter) && (!"".equals(version))){
+				Artifact retVal=new DefaultArtifact(
+						artifact.getGroupId(),
+						artifact.getArtifactId(),
+						artifact.getClassifier(),
+						artifact.getExtension(),
+						// The important one
+						version);
+				retVal.setProperties(artifact.getProperties());
+				return retVal;
+			}
+		}
+		return artifact;
+	}
+
 	private Artifact unify(Artifact dependent, Artifact dependency){
 		for (Entry<String,String> unification : unified.entrySet()) {
 			String groupFilter=unification.getKey();
 			String version=unification.getValue();
-			if("".equals(version)){
+			if("".equals(version) ){
 				version=dependent.getVersion();
 			}
-			if(dependent.getGroupId().startsWith(groupFilter) && dependency.getGroupId().startsWith(groupFilter)){
+			if(dependency.getGroupId().startsWith(groupFilter)){
 				Artifact retVal=new DefaultArtifact(
 						dependency.getGroupId(),
 						dependency.getArtifactId(),
