@@ -24,7 +24,6 @@ public interface DependentLoaderGraph {
 	public void expose(String what, String toPackage) ;
     public void registerDependency(String from, String to);
     public void registerUnpackedJar(String what, String ... where);
-	public void unifyGroupVersion(String group);
     public void unpack(String artifact, File destination);
     public String[] getCompileClasspath(String ... artifactId);
 

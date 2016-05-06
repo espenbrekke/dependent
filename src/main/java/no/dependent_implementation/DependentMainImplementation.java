@@ -228,7 +228,7 @@ public class DependentMainImplementation {
                             loaderGraph.expose(whatToPackage[0],whatToPackage[1]);
                         }
                     } else if(sCurrentLine.startsWith("dump")){
-                        String dumpFileName=sCurrentLine.replaceFirst("dump", "").replaceFirst("\\s+", "");
+                        String dumpFileName=sCurrentLine.replaceFirst("dump", " ").replaceFirst("\\s+", "");
                         loaderGraph.logGraph(dumpFileName);
                     } else if(sCurrentLine.startsWith("dependency")){
                         String withoutDependency=sCurrentLine.replaceFirst("dependency", "").replaceFirst("\\s+", "");
@@ -238,8 +238,10 @@ public class DependentMainImplementation {
                         }
                     } else
                     if(sCurrentLine.startsWith("unify")){
-                        String group=sCurrentLine.replaceFirst("unify", "").replaceFirst("\\s+", "");
-                        loaderGraph.unifyGroupVersion(group);
+                        String[] params=sCurrentLine.replaceFirst("unify", " ").replaceFirst("\\s+", "").split("\\s+");
+                        String group=get(params,0);
+                        String version=get(params,1);
+                        loaderGraph.unifyGroupVersion(group,version);
                     } else if(sCurrentLine.startsWith("unpacked")){
                         String withoutUnpacked=sCurrentLine.replaceFirst("unpacked", "").replaceFirst("\\s+", "");
                         String[] whatWhere = withoutUnpacked.split("\\s",2);

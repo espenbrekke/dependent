@@ -17,7 +17,7 @@ import org.eclipse.aether.artifact.DefaultArtifact;
 import org.eclipse.aether.resolution.*;
 
 class DependentLoaderGraphImplementation implements DependentLoaderGraph{
-	private Set<String> unified=new HashSet<String>(); 
+	private Map<String,String> unified=new HashMap<String,String>();
 	
 	private static DependentLoaderGraphImplementation theGraph=null;
 	
@@ -308,7 +308,12 @@ class DependentLoaderGraphImplementation implements DependentLoaderGraph{
 	}
 	
 	private Artifact unify(Artifact dependent, Artifact dependency){
-		for (String groupFilter : unified) {
+		for (Entry<String,String> unification : unified.entrySet()) {
+			String groupFilter=unification.getKey();
+			String version=unification.getValue();
+			if("".equals(version)){
+				version=dependent.getVersion();
+			}
 			if(dependent.getGroupId().startsWith(groupFilter) && dependency.getGroupId().startsWith(groupFilter)){
 				Artifact retVal=new DefaultArtifact(
 						dependency.getGroupId(),
@@ -316,7 +321,7 @@ class DependentLoaderGraphImplementation implements DependentLoaderGraph{
 						dependency.getClassifier(),
 						dependency.getExtension(),
 						// The important one
-						dependent.getVersion());
+						version);
 				retVal.setProperties(dependency.getProperties());
 				return retVal;
 			}
@@ -469,8 +474,8 @@ class DependentLoaderGraphImplementation implements DependentLoaderGraph{
 		enshureJarLoaded(artifactId);
 	}
 
-	public void unifyGroupVersion(String group){
-		unified.add(group);
+	public void unifyGroupVersion(String group,String version){
+		unified.put(group, version);
 	}
 
     public void unpack(String artifact, File destination){
