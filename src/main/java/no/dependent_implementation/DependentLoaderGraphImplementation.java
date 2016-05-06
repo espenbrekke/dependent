@@ -341,7 +341,7 @@ class DependentLoaderGraphImplementation implements DependentLoaderGraph{
 			if("".equals(version) ){
 				version=dependent.getVersion();
 			}
-			if(artifactId.startsWith(groupFilter)){
+			if(artifactId.startsWith(groupFilter) && (!"".equals(version))){
 				Artifact retVal=new DefaultArtifact(
 						dependency.getGroupId(),
 						dependency.getArtifactId(),
