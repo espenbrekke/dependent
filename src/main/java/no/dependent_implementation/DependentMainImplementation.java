@@ -251,8 +251,8 @@ public class DependentMainImplementation {
                     if((failOnError!=0) && (OutputBouble.numberOfFErrors>=failOnError)){
                         return false;
                     }
-                } catch (Exception e){
-                    e.printStackTrace(OutputBouble.logFile);
+                } catch (Throwable t){
+                    t.printStackTrace(OutputBouble.logFile);
                 }
             }
         }
