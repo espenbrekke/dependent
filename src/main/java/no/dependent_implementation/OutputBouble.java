@@ -13,7 +13,6 @@ public class OutputBouble {
         outerBouble=outer;
     }
 
-
     private static void increaseErrorCount(){
         numberOfFErrors=numberOfFErrors+1;
         log3("*** numberOfFErrors = "+numberOfFErrors);
@@ -51,12 +50,18 @@ public class OutputBouble {
     }
 
     private static void report(Throwable e, Boolean isError){
+        if(e==null){
+            write(new IllegalArgumentException("Trying to report null-message"),true);
+        }
+
         Throwable cause = null;
         Throwable result = e;
 
         while(null != (cause = result.getCause())  && (result != cause) ) {
             result = cause;
         }
+
+
 
         if(DependentMainImplementation.logLevel >=4){
             write(e, isError);
@@ -72,6 +77,10 @@ public class OutputBouble {
     }
 
     private static void write(Throwable error, Boolean isError){
+        if(error==null){
+            new IllegalArgumentException("Trying to write null-error").printStackTrace(logFile);
+            increaseErrorCount();
+        }
         OutputBouble bouble=theBouble.get();
         if(bouble==null){
             error.printStackTrace(logFile);
@@ -80,9 +89,14 @@ public class OutputBouble {
             error.printStackTrace(bouble.boubleStream);
             if(isError) bouble.isError=true;
         }
+
     }
 
     private static void write(String message, Boolean isError){
+        if(message==null){
+            new IllegalArgumentException("Trying to write null-message").printStackTrace(logFile);
+            increaseErrorCount();
+        }
         OutputBouble bouble=theBouble.get();
         if(bouble==null){
             logFile.println(message);
