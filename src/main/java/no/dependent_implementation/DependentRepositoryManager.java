@@ -30,7 +30,7 @@ public class DependentRepositoryManager {
 				if(repository.canResolve(artifact)){
 					ArtifactResult result=repository.resolveArtifact(artifact);
 
-					if((result!=null) && (!result.isMissing())){
+					if(result!=null && result.isResolved()){
 						for(OutputBouble b:errorBoubles){
 							b.close();
 						}

@@ -46,7 +46,7 @@ public class ConsoleTransferListener
     @Override
     public void transferProgressed( TransferEvent event )
     {
-        if(DependentMainImplementation.logLevel>=3){
+        if(DependentMainImplementation.logLevel>=5){
             TransferResource resource = event.getResource();
             downloads.put( resource, Long.valueOf( event.getTransferredBytes() ) );
 
