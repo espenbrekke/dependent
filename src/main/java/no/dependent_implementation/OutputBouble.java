@@ -9,6 +9,11 @@ public class OutputBouble {
     public static int numberOfFErrors=0;
     static public PrintStream logFile;
 
+    private OutputBouble(OutputBouble outer){
+        outerBouble=outer;
+    }
+
+
     private static void increaseErrorCount(){
         numberOfFErrors=numberOfFErrors+1;
         log3("*** numberOfFErrors = "+numberOfFErrors);
@@ -88,14 +93,16 @@ public class OutputBouble {
         }
     }
 
-    private OutputBouble outerBouble=theBouble.get();
+    private final OutputBouble outerBouble;
 
     private ByteArrayOutputStream _boubleStream=new ByteArrayOutputStream();
     private PrintStream boubleStream=new PrintStream(_boubleStream);
     public Boolean isError=false;
 
     public static OutputBouble push(){
-        OutputBouble newBouble=new OutputBouble();
+        OutputBouble outer=theBouble.get();
+        OutputBouble newBouble=new OutputBouble(outer);
+        theBouble.set(newBouble);
         return newBouble;
     }
 
