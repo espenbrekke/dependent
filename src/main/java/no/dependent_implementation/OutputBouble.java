@@ -9,6 +9,11 @@ public class OutputBouble {
     public static int numberOfFErrors=0;
     static public PrintStream logFile;
 
+    private static void increaseErrorCount(){
+        numberOfFErrors=numberOfFErrors+1;
+        log3("*** numberOfFErrors = "+numberOfFErrors);
+    }
+
     private static PrintStream getLog(){
         OutputBouble bouble=theBouble.get();
         if(bouble==null) return logFile;
@@ -28,7 +33,7 @@ public class OutputBouble {
     }
 
     public static void reportError(String preMessage, Throwable e){
-        numberOfFErrors +=1;
+        increaseErrorCount();
         report(preMessage, e);
     }
 
@@ -70,7 +75,7 @@ public class OutputBouble {
         OutputBouble bouble=theBouble.get();
         if(bouble==null){
             error.printStackTrace(logFile);
-            if(isError) numberOfFErrors=numberOfFErrors+1;
+            if(isError) increaseErrorCount() ;
         } else {
             error.printStackTrace(bouble.boubleStream);
             if(isError) bouble.isError=true;
@@ -81,7 +86,7 @@ public class OutputBouble {
         OutputBouble bouble=theBouble.get();
         if(bouble==null){
             logFile.println(message);
-            if(isError) numberOfFErrors=numberOfFErrors+1;
+            if(isError) increaseErrorCount();
         } else {
             bouble.boubleStream.println(message);
             if(isError) bouble.isError=true;
@@ -107,7 +112,7 @@ public class OutputBouble {
         try{
             if(outerBouble==null){
                 logFile.write(_boubleStream.toByteArray());
-                if(isError) numberOfFErrors=numberOfFErrors+1;
+                if(isError) increaseErrorCount();
             } else {
                 outerBouble.boubleStream.write(_boubleStream.toByteArray());
                 if(isError) outerBouble.isError=true;
