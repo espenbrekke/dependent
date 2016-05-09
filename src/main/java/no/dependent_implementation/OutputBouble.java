@@ -33,21 +33,16 @@ public class OutputBouble {
     }
 
     public static void reportError(String preMessage, Throwable e){
-        increaseErrorCount();
-        report(preMessage, e);
+        report(preMessage, e, true);
     }
 
     public static void reportError(Throwable e){
         report(e, true);
     }
 
-    public static void report(String preMessage, Throwable e){
-        write(preMessage, false);
-        report(e, false);
-    }
-
-    public static void report(Throwable e){
-        report(e, false);
+    public static void report(String preMessage, Throwable e, boolean isError){
+        write(preMessage, isError);
+        report(e, isError);
     }
 
     private static void report(Throwable e, Boolean isError){

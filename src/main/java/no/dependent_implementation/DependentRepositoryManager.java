@@ -20,7 +20,7 @@ public class DependentRepositoryManager {
     
 	private ArtifactResult resolveArtifact(
 			Artifact artifact) throws Exception {
-		Exception ex=null;
+		Throwable ex=null;
 
 		List<OutputBouble> errorBoubles=new LinkedList<>();
 		for(DependentRepository repository:repositories){
@@ -37,10 +37,11 @@ public class DependentRepositoryManager {
 						return result;
 					}
 				}
-			} catch (Exception e){
+			} catch (Throwable e){
 				ex=e;
+			} finally {
+				bouble.pop();
 			}
-			bouble.pop();
 		}
 
 		if(!errorBoubles.isEmpty()) errorBoubles.get(0).writeToParent();
