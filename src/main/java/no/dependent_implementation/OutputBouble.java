@@ -24,6 +24,12 @@ public class OutputBouble {
         return bouble.boubleStream;
     }
 
+    public static void log1(String what){
+        if(DependentMainImplementation.logLevel >=1){
+            logFile.println(what);
+        }
+    }
+
     public static void log2(String what){
         if(DependentMainImplementation.logLevel >=2){
             logFile.println(what);
@@ -51,29 +57,29 @@ public class OutputBouble {
 
     private static void report(Throwable e, Boolean isError){
         if(e==null){
-            write(new IllegalArgumentException("Trying to report null-message"),true);
-        }
-
-        Throwable cause = null;
-        Throwable result = e;
-
-        while(null != (cause = result.getCause())  && (result != cause) ) {
-            result = cause;
-        }
-
-
-
-        if(DependentMainImplementation.logLevel >=4){
-            write(e, isError);
+            write(new IllegalArgumentException("Trying to report null-message", e),true);
         } else {
-            if(e!=result){
-                write(e.getMessage(), isError);
-                write(result.getMessage(), isError);
+            Throwable cause = null;
+            Throwable result = e;
+
+            while(null != (cause = result.getCause())  && (result != cause) ) {
+                result = cause;
+            }
+
+            String message=e.getMessage();
+            String sourceMessage=result.getMessage();
+
+            if(DependentMainImplementation.logLevel >=4 || message==null){
+                write(e, isError);
             } else {
-                write(e.getMessage(),isError);
+                if(e!=result){
+                    write(message, isError);
+                    write(sourceMessage, isError);
+                } else {
+                    write(message,isError);
+                }
             }
         }
-
     }
 
     private static void write(Throwable error, Boolean isError){

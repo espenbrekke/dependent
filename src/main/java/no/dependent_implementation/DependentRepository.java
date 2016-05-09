@@ -23,6 +23,13 @@ public class DependentRepository {
 
     private RepositorySystem system = Booter.newRepositorySystem();
 
+    public String toString(){
+        String retVal=name;
+        if(remoteRepository!=null) retVal=retVal+" "+remoteRepository.getUrl();
+        if(root!=null) retVal=retVal+" "+root.toString();
+        return retVal;
+    }
+
     public boolean canResolve(Artifact artifact){
         if("".equals(groupFilter)) return true;
         return artifact.getGroupId().startsWith(groupFilter);

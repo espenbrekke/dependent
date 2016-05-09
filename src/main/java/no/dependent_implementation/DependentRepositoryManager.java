@@ -21,6 +21,7 @@ public class DependentRepositoryManager {
 	private ArtifactResult resolveArtifact(
 			Artifact artifact) throws Exception {
 		Throwable ex=null;
+		List<DependentRepository> lookedIn=new LinkedList();
 
 		List<OutputBouble> errorBoubles=new LinkedList<>();
 		for(DependentRepository repository:repositories){
@@ -28,6 +29,7 @@ public class DependentRepositoryManager {
 			errorBoubles.add(bouble);
 			try{
 				if(repository.canResolve(artifact)){
+					lookedIn.add(repository);
 					ArtifactResult result=repository.resolveArtifact(artifact);
 
 					if(result!=null && result.isResolved()){
@@ -48,6 +50,12 @@ public class DependentRepositoryManager {
 		for(OutputBouble bouble:errorBoubles){
 			bouble.close();
 		}
+		OutputBouble.log1("unable to resolve artifact: " + artifact.getArtifactId());
+		OutputBouble.log2("looked in:");
+		for(DependentRepository repo:lookedIn){
+			OutputBouble.log2(repo.toString());
+		}
+
 		throw new Exception("unable to resolve artifact: "+artifact.getArtifactId(), ex);
 	}
 
