@@ -1,6 +1,6 @@
 package no.dependent_implementation.manual;
 
-import no.dependent_implementation.OutputBouble;
+import no.dependent.OutputBouble;
 import org.apache.maven.repository.internal.MavenRepositorySystemUtils;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.connector.basic.BasicRepositoryConnectorFactory;

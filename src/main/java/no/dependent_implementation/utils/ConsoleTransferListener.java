@@ -17,8 +17,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import no.dependent_implementation.DependentMainImplementation;
-import no.dependent_implementation.OutputBouble;
+import no.dependent.OutputBouble;
 import org.eclipse.aether.transfer.AbstractTransferListener;
 import org.eclipse.aether.transfer.MetadataNotFoundException;
 import org.eclipse.aether.transfer.TransferEvent;
@@ -46,7 +45,7 @@ public class ConsoleTransferListener
     @Override
     public void transferProgressed( TransferEvent event )
     {
-        if(DependentMainImplementation.logLevel>=5){
+        if(OutputBouble.logLevel>=5){
             TransferResource resource = event.getResource();
             downloads.put( resource, Long.valueOf( event.getTransferredBytes() ) );
 
@@ -105,7 +104,7 @@ public class ConsoleTransferListener
     {
         transferCompleted( event );
 
-        if(DependentMainImplementation.logLevel>=2) {
+        if(OutputBouble.logLevel>=2) {
 
             TransferResource resource = event.getResource();
             long contentLength = event.getTransferredBytes();
@@ -142,7 +141,7 @@ public class ConsoleTransferListener
     private void transferCompleted( TransferEvent event )
     {
         downloads.remove( event.getResource() );
-        if(DependentMainImplementation.logLevel>=2) {
+        if(OutputBouble.logLevel>=2) {
             StringBuilder buffer = new StringBuilder(64);
             pad(buffer, lastLength);
             buffer.append('\r');

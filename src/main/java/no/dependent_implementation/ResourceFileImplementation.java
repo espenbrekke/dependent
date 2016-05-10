@@ -4,6 +4,7 @@ import java.io.*;
 import java.net.URI;
 
 import no.dependent.DependentFactory;
+import no.dependent.OutputBouble;
 import no.dependent.ResourceFile;
 import sun.misc.IOUtils;
 

@@ -11,9 +11,10 @@
 package no.dependent_implementation.utils;
 
 
-import no.dependent_implementation.OutputBouble;
+import no.dependent.OutputBouble;
 import org.eclipse.aether.AbstractRepositoryListener;
 import org.eclipse.aether.RepositoryEvent;
+import org.eclipse.aether.repository.ArtifactRepository;
 
 /**
  * A simplistic repository listener that logs events to the console.
@@ -57,7 +58,12 @@ public class ConsoleRepositoryListener
 
     public void artifactResolved( RepositoryEvent event )
     {
-        OutputBouble.log3("Resolved artifact " + event.getArtifact() + " from " + event.getRepository());
+        ArtifactRepository repo=event.getRepository();
+        if(repo!=null){
+            OutputBouble.log3("Resolved artifact " + event.getArtifact() + " from " + repo);
+        } else {
+            OutputBouble.log3("Resolved artifact " + event.getArtifact());
+        }
     }
 
     public void artifactDownloading( RepositoryEvent event )

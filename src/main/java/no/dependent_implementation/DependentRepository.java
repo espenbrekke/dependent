@@ -1,5 +1,6 @@
 package no.dependent_implementation;
 
+import no.dependent.OutputBouble;
 import no.dependent_implementation.utils.Booter;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;

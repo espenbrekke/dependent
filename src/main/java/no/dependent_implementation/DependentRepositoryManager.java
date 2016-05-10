@@ -8,6 +8,7 @@ import java.util.zip.ZipFile;
 
 import no.dependent.DependentLoaderConfiguration;
 
+import no.dependent.OutputBouble;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
 import org.eclipse.aether.graph.Dependency;
@@ -63,24 +64,54 @@ public class DependentRepositoryManager {
 			Artifact artifact) throws Exception {
 		Exception ex=null;
 
+		List<OutputBouble> errorBoubles=new LinkedList<>();
+		List<DependentRepository> lookedIn=new LinkedList();
+
 		for(DependentRepository repository:repositories){
+			OutputBouble bouble=OutputBouble.push();
+			errorBoubles.add(bouble);
 			try{
 				if(repository.canResolve(artifact)) {
+					lookedIn.add(repository);
+
 					ArtifactResult result = repository.resolveArtifact(artifact);
-					if ((result != null) && (!result.isMissing())) {
+					System.out.println("artifact resolved " + result.toString());
+					if (result != null && result.isResolved()) {
+						for(OutputBouble b:errorBoubles){
+							b.close();
+						}
+						bouble.pop();
 						ArtifactDescriptorResult artifactDescriptor = repository.getArtifactDescriptor(artifact);
-						if (artifactDescriptor != null)
+						if (artifactDescriptor != null){
+							//System.out.println("Got artifact descriptor "+artifactDescriptor.toString());
 							return artifactDescriptor;
+						} else {
+							//System.out.println("Got no artifact descriptor ");
+						}
 					}
 				}
 			} catch (Exception e){
 				ex=e;
+			} finally {
+				bouble.pop();
 			}
 		}
-		throw new Exception("unable to describe artifact: "+artifact.getArtifactId(), ex);
+
+		if(!errorBoubles.isEmpty()) errorBoubles.get(0).writeToParent();
+		for(OutputBouble bouble:errorBoubles){
+			bouble.close();
+		}
+		OutputBouble.log1("unable to describe artifact: " + artifact.toString());
+		OutputBouble.log2("looked in:");
+		for(DependentRepository repo:lookedIn){
+			OutputBouble.log2(repo.toString());
+		}
+
+		throw new Exception("Unable to describe artifact: "+artifact.getArtifactId(), ex);
 	}
 
 	public Result<File> getLocalFile(Artifact artifact){
+		OutputBouble bouble=OutputBouble.push();
 		try {
 //			Artifact artifact = new DefaultArtifact(artifactId );
 			ArtifactResult artifactResult;
@@ -89,19 +120,29 @@ public class DependentRepositoryManager {
 	        return Result.res(describedArtifact.getFile());
 		} catch (Exception e) {
 			 return Result.error(e);
+		} finally {
+			bouble.pop();
+			if(bouble.isError) bouble.writeToParent();
 		}
 	}
 
 	public List<Artifact> getDirectDependencies(Artifact artifact) throws Exception {
   //      Artifact artifact = new DefaultArtifact(artifactId );
-        ArtifactDescriptorResult descriptorResult = getArtifactDescriptor(artifact);
-        List<Dependency> dependencies=descriptorResult.getDependencies();
-        List<Artifact> retVal=new LinkedList<Artifact>();
-        for (Dependency dependency : dependencies) {
-        	if(isRuntime(dependency) && !dependency.isOptional())
-        		retVal.add(dependency.getArtifact());
+		OutputBouble bouble=OutputBouble.push();
+
+		try{
+			ArtifactDescriptorResult descriptorResult = getArtifactDescriptor(artifact);
+			List<Dependency> dependencies=descriptorResult.getDependencies();
+			List<Artifact> retVal=new LinkedList<Artifact>();
+			for (Dependency dependency : dependencies) {
+				if(isRuntime(dependency) && !dependency.isOptional())
+					retVal.add(dependency.getArtifact());
+			}
+			return retVal;
+		} finally {
+			bouble.pop();
+			if(bouble.isError) bouble.writeToParent();
 		}
-        return retVal;
 	}
 
 	private boolean isRuntime(Dependency dependency) {

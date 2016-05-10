@@ -1,6 +1,7 @@
 package no.dependent_implementation;
 
 import no.dependent.DependentLoader;
+import no.dependent.OutputBouble;
 
 import java.lang.reflect.Method;
 

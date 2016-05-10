@@ -1,5 +1,7 @@
 package no.dependent_implementation;
 
+import no.dependent.OutputBouble;
+
 import static java.util.regex.Pattern.compile;
 
 import java.io.FileInputStream;

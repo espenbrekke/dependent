@@ -12,6 +12,7 @@ import java.util.Map.Entry;
 import no.dependent.DependentLoader;
 import no.dependent.DependentLoaderVisitor;
 import no.dependent.DependentLoaderGraph;
+import no.dependent.OutputBouble;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
 import org.eclipse.aether.resolution.*;
@@ -180,6 +181,8 @@ class DependentLoaderGraphImplementation implements DependentLoaderGraph{
 			assert(loaderMap.get(toString(artifactId))!=null);
 		}
 		if(recursive){
+			OutputBouble bouble=OutputBouble.push();
+
 			try {
 				List<Artifact> dependencies=dependencyManager.getDirectDependencies(artifactId);
 				for (Artifact dependency : dependencies) {
@@ -189,6 +192,9 @@ class DependentLoaderGraphImplementation implements DependentLoaderGraph{
 				}
 			} catch (Exception e) {
 				OutputBouble.reportError(e);
+			} finally {
+				bouble.pop();
+				if(bouble.isError) bouble.writeToParent();
 			}
 		}
 		visitLoader(theLoader);
@@ -270,6 +276,8 @@ class DependentLoaderGraphImplementation implements DependentLoaderGraph{
 		}
 		if(loaderMap.containsKey(toString(artifactId))) return loaderMap.get(toString(artifactId));
 		// Fetch jar and dependencies.
+		OutputBouble bouble=OutputBouble.push();
+
 		try {
 			Result<File> localFileName=dependencyManager.getLocalFile(artifactId);
 			
@@ -278,9 +286,13 @@ class DependentLoaderGraphImplementation implements DependentLoaderGraph{
 			setLoader(theLoader);
 			
 			List<Artifact> dependencies=dependencyManager.getDirectDependencies(artifactId);
-			
-			DependentLoaderImplementation[] actualDependencies=new DependentLoaderImplementation[dependencies.size()];
+
+			DependentLoaderImplementation[] actualDependencies=new DependentLoaderImplementation[dependencies.size()+theLoader.dependencies.length];
 			int i=0;
+			for(DependentLoader dependencyFromConf:theLoader.dependencies){
+				actualDependencies[i]=theLoader.dependencies[i];
+				i++;
+			}
 			for (Artifact dependencyId : dependencies) {
 				
 				DependentLoaderImplementation loader=enshureDependencyJarLoaded(artifactId,dependencyId);
@@ -305,6 +317,9 @@ class DependentLoaderGraphImplementation implements DependentLoaderGraph{
 		} catch (Exception e) {
 			OutputBouble.reportError(e);
 			return theLoader;
+		} finally {
+			bouble.pop();
+			if(bouble.isError) bouble.writeToParent();
 		}
 		//return null;
 	}
@@ -361,7 +376,8 @@ class DependentLoaderGraphImplementation implements DependentLoaderGraph{
 	public void getJar(String artifactId){
 		getJar(new DefaultArtifact(artifactId));
 	}
-	public void getJar(Artifact artifactId){	
+	public void getJar(Artifact artifactId){
+		OutputBouble bouble=OutputBouble.push();
 		// Fetch jar and dependencies.
 		try {
 			Result<File> localFileName=dependencyManager.getLocalFile(artifactId);
@@ -375,6 +391,9 @@ class DependentLoaderGraphImplementation implements DependentLoaderGraph{
 			}
 		} catch (Exception e) {
 			OutputBouble.reportError(e);
+		}finally {
+			bouble.pop();
+			if(bouble.isError) bouble.writeToParent();
 		}
 	}
 		
@@ -580,6 +599,7 @@ class DependentLoaderGraphImplementation implements DependentLoaderGraph{
 
 
 	public void downloadFlat(String artifact, String copyToDir){
+		OutputBouble bouble=OutputBouble.push();
 		try {
 			Artifact theArtifact=new DefaultArtifact(artifact);
 
@@ -608,6 +628,9 @@ class DependentLoaderGraphImplementation implements DependentLoaderGraph{
 			}
 		} catch (Exception e) {
 			OutputBouble.reportError(e);
+		} finally {
+			bouble.pop();
+			if(bouble.isError) bouble.writeToParent();
 		}
 	}
 

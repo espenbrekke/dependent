@@ -3,6 +3,7 @@ package no.dependent_implementation;
 import no.dependent.DependentFactory;
 import no.dependent.DependentTrackerChange;
 import no.dependent.DependentTrackerChangeDescription;
+import no.dependent.OutputBouble;
 
 import java.io.File;
 import java.io.IOException;

@@ -12,7 +12,6 @@ import java.util.LinkedList;
 import java.util.List;
 
 public class DependentMainImplementation {
-    public static int logLevel=1;
     private static DependentLoaderGraphImplementation loaderGraph=(DependentLoaderGraphImplementation)DependentFactory.get().getGraph();// DependentLoaderGraphImplementation.create(dependencyManager, DependentMain.class.getClassLoader());
     private static DependentRepositoryManager dependencyManager=loaderGraph.dependencyManager;
 
@@ -73,6 +72,7 @@ public class DependentMainImplementation {
 
     private static boolean readConfig(List<String> configFileContent,String[] mainArgs){
         boolean success=true;
+        OutputBouble.numberOfFErrors=0;
         int failOnError=0;
 
         PrintStream sysOut=System.out;
@@ -132,7 +132,7 @@ public class DependentMainImplementation {
                     } else if(sCurrentLine.startsWith("loglevel")){
                         String withoutLoglevel=sCurrentLine.replaceFirst("loglevel", "").replaceFirst("\\s+", "");
                         try{
-                            logLevel=Integer.parseInt(withoutLoglevel);
+                            OutputBouble.logLevel=Integer.parseInt(withoutLoglevel);
                         }catch (Exception e){}
                     } else if(sCurrentLine.startsWith("noredirect")){
                         System.setOut(sysOut);
@@ -251,6 +251,9 @@ public class DependentMainImplementation {
                     }
 
                     if((failOnError!=0) && (OutputBouble.numberOfFErrors>=failOnError)){
+                        OutputBouble.log1("Dependent failed.");
+                        OutputBouble.log1("failOnError="+failOnError);
+                        OutputBouble.log1("Number of registred errors="+OutputBouble.numberOfFErrors);
                         return false;
                     }
                 } catch (Throwable t){

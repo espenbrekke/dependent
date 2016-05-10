@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
+import no.dependent.OutputBouble;
 import no.dependent_implementation.utils.Booter;
 
 import org.eclipse.aether.RepositorySystem;

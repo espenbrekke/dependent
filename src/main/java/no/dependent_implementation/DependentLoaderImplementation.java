@@ -10,6 +10,7 @@ import java.util.zip.ZipFile;
 
 import no.dependent.DependentLoader;
 import no.dependent.DependentLoaderConfiguration;
+import no.dependent.OutputBouble;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
 

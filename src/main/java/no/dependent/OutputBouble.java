@@ -1,4 +1,4 @@
-package no.dependent_implementation;
+package no.dependent;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
@@ -8,6 +8,7 @@ public class OutputBouble {
 
     public static int numberOfFErrors=0;
     static public PrintStream logFile;
+    public static int logLevel=1;
 
     private OutputBouble(OutputBouble outer){
         outerBouble=outer;
@@ -25,19 +26,19 @@ public class OutputBouble {
     }
 
     public static void log1(String what){
-        if(DependentMainImplementation.logLevel >=1){
+        if(logLevel >=1){
             logFile.println(what);
         }
     }
 
     public static void log2(String what){
-        if(DependentMainImplementation.logLevel >=2){
+        if(logLevel >=2){
             logFile.println(what);
         }
     }
 
     public static void log3(String what){
-        if(DependentMainImplementation.logLevel >=2){
+        if(logLevel >=2){
             logFile.println(what);
         }
     }
@@ -69,11 +70,11 @@ public class OutputBouble {
             String message=e.getMessage();
             String sourceMessage=result.getMessage();
 
-            if(DependentMainImplementation.logLevel >=4 || message==null){
+            if(logLevel >=4 || message==null){
                 write(e, isError);
             } else {
                 if(e!=result){
-                    write(message, isError);
+                    write(message, false);
                     write(sourceMessage, isError);
                 } else {
                     write(message,isError);
