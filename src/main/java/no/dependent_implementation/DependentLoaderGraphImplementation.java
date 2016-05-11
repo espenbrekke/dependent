@@ -8,6 +8,7 @@ import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
 import java.util.Map.Entry;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import no.dependent.DependentLoader;
 import no.dependent.DependentLoaderVisitor;
@@ -18,6 +19,12 @@ import org.eclipse.aether.artifact.DefaultArtifact;
 import org.eclipse.aether.resolution.*;
 
 class DependentLoaderGraphImplementation implements DependentLoaderGraph{
+	private static AtomicInteger _idCounter=new AtomicInteger(0);
+
+	public static int getNewLoaderId(){
+		return _idCounter.getAndIncrement();
+	}
+
 	private Map<String,String> unified=new HashMap<String,String>();
 	
 	private static DependentLoaderGraphImplementation theGraph=null;
@@ -289,9 +296,8 @@ class DependentLoaderGraphImplementation implements DependentLoaderGraph{
 
 			DependentLoaderImplementation[] actualDependencies=new DependentLoaderImplementation[dependencies.size()+theLoader.dependencies.length];
 			int i=0;
-			for(DependentLoader dependencyFromConf:theLoader.dependencies){
-				actualDependencies[i]=theLoader.dependencies[i];
-				i++;
+			for(DependentLoaderImplementation dependencyFromConf:theLoader.dependencies){
+				actualDependencies[i++]=dependencyFromConf;
 			}
 			for (Artifact dependencyId : dependencies) {
 				

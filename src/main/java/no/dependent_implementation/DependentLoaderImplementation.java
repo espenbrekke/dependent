@@ -10,11 +10,14 @@ import java.util.zip.ZipFile;
 
 import no.dependent.DependentLoader;
 import no.dependent.DependentLoaderConfiguration;
+import no.dependent.DependentLoaderGraph;
 import no.dependent.OutputBouble;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
 
 class DependentLoaderImplementation extends DependentLoader {
+    private int loaderId=DependentLoaderGraphImplementation.getNewLoaderId();
+
     public String tag="";
 
     public void tag(String tag){
@@ -269,15 +272,14 @@ class DependentLoaderImplementation extends DependentLoader {
 
 
     private abstract class Hunter<T>{
-    	public T value=null;
-		public abstract boolean hunt(String prey, ClassLoader field, boolean isDependent) throws ClassNotFoundException;
+		public abstract boolean hunt(String prey, ClassLoader field, boolean isDependent, T[] container) throws ClassNotFoundException;
     }
     
-    private void hunt(String prey, Hunter hunter){
+    private <T> boolean  hunt(String prey, Hunter<T> hunter, T[] container){
     	if(proxyFor!=null){
         	try {
-    		if(hunter.hunt(prey,proxyFor,false)) return;
-        	} catch (ClassNotFoundException e) {
+    		if(hunter.hunt(prey,proxyFor,false, container)) return true;
+        	} catch (Throwable e) {
 				//ignore
 			}
     	}
@@ -285,8 +287,8 @@ class DependentLoaderImplementation extends DependentLoader {
         // (1) Delegate to our parent
         if (parent != null){
         	try {
-				if(hunter.hunt(prey,parent,false)) return;
-			} catch (ClassNotFoundException e) {
+				if(hunter.hunt(prey,parent,false, container)) return true;
+			} catch (Throwable e) {
 				//ignore
 			}
         }
@@ -305,73 +307,50 @@ class DependentLoaderImplementation extends DependentLoader {
         	List<ClassLoader> exposedLoaders=exposure.getLoadersExposedToPackage(callerClassName);
         	for (ClassLoader exposedLoader : exposedLoaders) {
             	try {
-    				if(hunter.hunt(prey,exposedLoader,true)) return;
-    			} catch (ClassNotFoundException e) {
+    				if(hunter.hunt(prey,exposedLoader,true, container)) return true;
+    			} catch (Throwable e) {
     				//ignore
     			}
 			}
         }
-        
-        clearHunt(); 
+
         //Hunt in dependencies
-        if(huntNoParent(prey,hunter)) return;
+        if(huntNoParent(prey,hunter, container, new BitSet(512))) return true;
 
-
+        return false;
     }
     
-    private String didntFind="";
-    private void setDidntFind(String didntFind){
-    	this.didntFind=didntFind;
-    }
-    private boolean checkDidntFind(String prey){
-    	return didntFind.equals(prey);
-    }
-        
-    private void clearHunt(){
-    	if(checkDidntFind("clearing")){
-    		return ;
-    	}
-        setDidntFind("clearing");
-        for (DependentLoaderImplementation dependentLoader : dependencies) {
-       		dependentLoader.clearHunt();
-		}
-    }
-    
-    private boolean huntNoParent(String prey, Hunter hunter){
-    	if(didntFind.equals(prey)){
+    private boolean huntNoParent(String prey, Hunter hunter, Object[] container, BitSet cuttof){
+    	if(cuttof.get(loaderId)){
     		return false;
     	}
+        cuttof.set(loaderId);
     	
     	if(proxyFor!=null){
         	try {
-        		if(hunter.hunt(prey,proxyFor,false)){
-        			setDidntFind("");
+        		if(hunter.hunt(prey,proxyFor,false, container)){
         			return true;
         		}
-        	} catch (ClassNotFoundException e) {
+        	} catch (Throwable e) {
 				//ignore
 			}
     	}
     	
-    	setDidntFind(prey);
         // then Check this
         try {
-			if(hunter.hunt(prey,this,true)){
-				setDidntFind("");
+			if(hunter.hunt(prey,this,true, container)){
 				return true;
 			}
-		} catch (ClassNotFoundException e) {
+		} catch (Throwable e) {
 			//Ignore
 		}
         
         // (2) Search dependencies
         for (DependentLoaderImplementation dependentLoader : dependencies) {
-       		if(dependentLoader.huntNoParent(prey,hunter)){
-       			setDidntFind("");;
+       		if(dependentLoader.huntNoParent(prey,hunter, container,cuttof)){
 				return true;
 			};
 		}
-        setDidntFind(prey);
         return false;
     }
 
@@ -531,13 +510,14 @@ class DependentLoaderImplementation extends DependentLoader {
 
     @Override
     public URL findResource(final String name) {
-    	assert(debugPoint(name));
-    	
-        findResourceHunter.value=null;
-        hunt(name, findResourceHunter);
-        URL url = findResourceHunter.value;
-        findResourceHunter.value=null;
-        return url;
+
+        URL[] container=new URL[1];
+
+        if(hunt(name, findResourceHunter, container)){
+            return container[0];
+        } else {
+            return null;
+        }
     }
     private URL superFindResource(final String name) {
     	return super.findResource(name);
@@ -546,14 +526,13 @@ class DependentLoaderImplementation extends DependentLoader {
 
     private Hunter<URL> findResourceHunter=new Hunter<URL>() {   	
     	@Override
-    	public boolean hunt(String name,ClassLoader loader, boolean isDependent) throws ClassNotFoundException {			
+    	public boolean hunt(String name,ClassLoader loader, boolean isDependent, URL[] container) throws ClassNotFoundException {
     		if(!isDependent){
     			return false;
     		}
-    		
-    		Enumeration<URL> otherResourcePaths;
-    		value=((DependentLoaderImplementation)loader).superFindResource(name);
-        	if(value!=null) return true;
+
+            container[0]=((DependentLoaderImplementation)loader).superFindResource(name);
+        	if(container[0]!=null) return true;
 
     		return false;
     	}
@@ -564,20 +543,23 @@ class DependentLoaderImplementation extends DependentLoader {
     @Override
     public Enumeration<URL> findResources(String name) throws IOException {
         Vector<URL> result = new Vector<URL>();
-        
-        findResourcesHunter.value=result;
-        hunt(name, findResourcesHunter);
-        findResourcesHunter.value=null;
-        return result.elements();
+
+        Vector<URL>[] container=new Vector[1];
+        container[0]=result;
+        if(hunt(name, findResourcesHunter, container)){
+            return result.elements();
+        } else {
+            return new Vector<URL>().elements();
+        }
     }
 
     public Enumeration<URL> superFindResources(String name) throws IOException {
-    	return super.findResources(name);
+        return super.findResources(name);
     }
     
     private Hunter<Vector<URL>> findResourcesHunter=new Hunter<Vector<URL>>() {   	
     	@Override
-    	public boolean hunt(String name,ClassLoader loader, boolean isDependent) throws ClassNotFoundException {			
+    	public boolean hunt(String name,ClassLoader loader, boolean isDependent, Vector<URL>[] container) throws ClassNotFoundException {
     		if(!isDependent){
     			return false;
     		} 
@@ -586,7 +568,7 @@ class DependentLoaderImplementation extends DependentLoader {
 			try {
 				otherResourcePaths = ((DependentLoaderImplementation)loader).superFindResources(name);
 	        	while (otherResourcePaths.hasMoreElements()) {
-	        		value.addElement(otherResourcePaths.nextElement());
+                    container[0].addElement(otherResourcePaths.nextElement());
 	        	}
 			} catch (IOException e) {
 				//ignore
@@ -601,14 +583,13 @@ class DependentLoaderImplementation extends DependentLoader {
   
     @Override
     public URL getResource(String name) {
-        URL url = null;
-    	assert(debugPoint(name));
-        // Search this jar        
-        resourceHunter.value=null;
-        hunt(name, resourceHunter);
-        url = resourceHunter.value;
-
-        return url;
+        // Search this jar
+        URL[] container=new URL[1];
+        if(hunt(name, resourceHunter, container)){
+            return container[0];
+        } else {
+            return null;
+        }
     }
 
     private URL superGetResource(String name) {
@@ -617,14 +598,13 @@ class DependentLoaderImplementation extends DependentLoader {
 
     private Hunter<URL> resourceHunter=new Hunter<URL>() {   	
     	@Override
-    	public boolean hunt(String name,ClassLoader loader, boolean isDependent) throws ClassNotFoundException {			
+    	public boolean hunt(String name,ClassLoader loader, boolean isDependent, URL[] container) throws ClassNotFoundException {
     		if(!isDependent){
-    			value=loader.getResource(name);
-    			return value!=null;
-    		} 
-    		value=((DependentLoaderImplementation)loader).superGetResource(name);
-    		return value!=null;
-   	
+                container[0]=loader.getResource(name);
+    			return container[0]!=null;
+    		}
+            container[0]=((DependentLoaderImplementation)loader).superGetResource(name);
+    		return container[0]!=null;
     	}
     };
     
@@ -641,16 +621,12 @@ class DependentLoaderImplementation extends DependentLoader {
      */
     @Override
     public synchronized InputStream getResourceAsStream(String name) {
-        InputStream stream = null;
-    	assert(debugPoint(name));
-
-    	
-    	 resourceAsStreamHunter.value=null;
-    	hunt(name, resourceAsStreamHunter);
-        stream = resourceAsStreamHunter.value;
-
-     //   bDebugHuntOutput=false;
-        return stream;
+        InputStream[] container=new InputStream[1];
+       	if(hunt(name, resourceAsStreamHunter,container)){
+            return container[0];
+        } else {
+            return null;
+        }
     }
     
     private InputStream superGetResourceAsStream(String name) {
@@ -659,15 +635,14 @@ class DependentLoaderImplementation extends DependentLoader {
 
     private Hunter<InputStream> resourceAsStreamHunter=new Hunter<InputStream>() {   	
 		@Override
-		public boolean hunt(String name,ClassLoader loader, boolean isDependent) throws ClassNotFoundException {		
+		public boolean hunt(String name,ClassLoader loader, boolean isDependent, InputStream[] container) throws ClassNotFoundException {
 			
 			if(!isDependent){
-        		value=loader.getResourceAsStream(name);
-        		return value!=null;
-        	} 
-        	value=((DependentLoaderImplementation)loader).superGetResourceAsStream(name);
-    		return value!=null;
-        	
+        		container[0]=loader.getResourceAsStream(name);
+        		return container[0]!=null;
+        	}
+            container[0]=((DependentLoaderImplementation)loader).superGetResourceAsStream(name);
+    		return container[0]!=null;
 		}
 	};
 
@@ -716,55 +691,31 @@ class DependentLoaderImplementation extends DependentLoader {
     @Override
     public synchronized Class<?> loadClass(String name, boolean resolve)  		
     		throws ClassNotFoundException {
+        Class<?>[] container=new Class[1];
+        if(hunt(name, loadingHunter, container)){
+            if (container[0]!=null && resolve)
+                resolveClass(container[0]);
+            return container[0];
+        };
 
-        Class<?> clazz = null;
-              
-        try {
-        	loadingHunter.value=null;
-        	hunt(name, loadingHunter);
-        	clazz=loadingHunter.value;
-        	if(clazz!=null)
-        		return clazz;
-    
-        	throw new ClassNotFoundException(name+" Not visible from "+toString());
-    
-        } finally{
-			if (clazz!=null && resolve)
-				resolveClass(clazz);    
-
-        }
-
+        throw new ClassNotFoundException(name+" Not visible from "+toString());
     }
 
     private Hunter<Class<?>> loadingHunter=new Hunter<Class<?>>() {   	
 		@Override
-		public boolean hunt(String name,ClassLoader loader, boolean isDependent) throws ClassNotFoundException {			
+		public boolean hunt(String name,ClassLoader loader, boolean isDependent, Class<?>[] container) throws ClassNotFoundException {
 			if(!isDependent){
-        		value=Class.forName(name, false, loader);
-        		return value!=null;
-        	} 
-        	value=((DependentLoaderImplementation)loader).shallowLoadClass(name, false);
-    		return value!=null;
-        	
+                container[0] = Class.forName(name, false, loader);
+        		return container[0]!=null;
+        	}
+            container[0]=((DependentLoaderImplementation) loader).shallowLoadClass(name, false);
+    		return container[0]!=null;
 		}
 	};
-    
-    private boolean debugPoint(String name) {
-    	if(bDebugHuntOutput){
-    		System.out.println("Hunting: "+name+"  in  "+ getURLs()[0]);
-    	}
-    	
-    	int a=0;
-    	if(name.contains("ServerContext")){
-    		a=1;
-    	}
-    	return true;
-	}
 
     
     
 	private Class<?> shallowLoadClass(String name, boolean resolve){
-    	assert(debugPoint(name));
     	
     	Class<?> clazz = null;
     	try {
@@ -784,7 +735,7 @@ class DependentLoaderImplementation extends DependentLoader {
 					resolveClass(clazz);    
 					return (clazz);
 				}
-			} catch (ClassNotFoundException e) {
+			} catch (Throwable e) {
 				//Ignore
 			}
     		
@@ -805,7 +756,6 @@ class DependentLoaderImplementation extends DependentLoader {
      * @param name Name of the resource to return
      */
     protected Class<?> findLoadedClass0(String name) {
-    	assert(debugPoint(name));
         ResourceEntry entry = resourceEntries.get(name);
         if (entry != null) {
             return entry.loadedClass;
