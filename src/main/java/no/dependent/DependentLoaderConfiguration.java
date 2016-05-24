@@ -1,9 +1,6 @@
 package no.dependent;
 
-import java.util.Arrays;
-import java.util.Map;
-
-
+import java.util.*;
 
 
 public class DependentLoaderConfiguration {
@@ -46,5 +43,18 @@ public class DependentLoaderConfiguration {
             }
         }
         return retVal;
+    }
+
+    public Map<String, List<String>> valueMap(){
+        Map<String, List<String>> result=new HashMap();
+        for (int i = 0; i < propertyNames.length; i++) {
+            String name=propertyNames[i];
+            List<String> conmtainer=result.get(name);
+            if(conmtainer==null) conmtainer=new ArrayList();
+
+            conmtainer.add(values[i]);
+            result.put(name,conmtainer);
+        }
+        return result;
     }
 }

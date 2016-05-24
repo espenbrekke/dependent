@@ -5,6 +5,7 @@ import java.net.URL;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
@@ -250,7 +251,7 @@ class DependentLoaderImplementation extends DependentLoader {
      * The cache of ResourceEntry for classes and resources we have loaded,
      * keyed by resource name.
      */
-    protected Map<String, ResourceEntry> resourceEntries = new HashMap<String, ResourceEntry>();
+    protected Map<String, Class<?>> classCache = new ConcurrentHashMap<>();
     
     public String toString(){
         URL[] utls=getURLs();
@@ -272,18 +273,23 @@ class DependentLoaderImplementation extends DependentLoader {
 
 
     private abstract class Hunter<T>{
+        public String name="";
+        public Hunter name(String name){
+            this.name=name;
+            return this;
+        }
 		public abstract boolean hunt(String prey, ClassLoader field, boolean isDependent, T[] container) throws ClassNotFoundException;
     }
     
     private <T> boolean  hunt(String prey, Hunter<T> hunter, T[] container){
-    	if(proxyFor!=null){
+        if(proxyFor!=null){
         	try {
     		if(hunter.hunt(prey,proxyFor,false, container)) return true;
         	} catch (Throwable e) {
 				//ignore
 			}
     	}
-    	
+
         // (1) Delegate to our parent
         if (parent != null){
         	try {
@@ -303,7 +309,7 @@ class DependentLoaderImplementation extends DependentLoader {
         			break;
         		}
 			}
-        	
+
         	List<ClassLoader> exposedLoaders=exposure.getLoadersExposedToPackage(callerClassName);
         	for (ClassLoader exposedLoader : exposedLoaders) {
             	try {
@@ -524,7 +530,7 @@ class DependentLoaderImplementation extends DependentLoader {
     }
 
 
-    private Hunter<URL> findResourceHunter=new Hunter<URL>() {   	
+    private Hunter<URL> findResourceHunter=new Hunter<URL>() {
     	@Override
     	public boolean hunt(String name,ClassLoader loader, boolean isDependent, URL[] container) throws ClassNotFoundException {
     		if(!isDependent){
@@ -536,7 +542,7 @@ class DependentLoaderImplementation extends DependentLoader {
 
     		return false;
     	}
-    };
+    }.name("findResourceHunter");
     
     
 
@@ -546,11 +552,8 @@ class DependentLoaderImplementation extends DependentLoader {
 
         Vector<URL>[] container=new Vector[1];
         container[0]=result;
-        if(hunt(name, findResourcesHunter, container)){
-            return result.elements();
-        } else {
-            return new Vector<URL>().elements();
-        }
+        hunt(name, findResourcesHunter, container);
+        return result.elements();
     }
 
     public Enumeration<URL> superFindResources(String name) throws IOException {
@@ -572,11 +575,12 @@ class DependentLoaderImplementation extends DependentLoader {
 	        	}
 			} catch (IOException e) {
 				//ignore
+                return false;
 			}
 
     		return false;
     	}
-    };
+    }.name("findResourcesHunter");
     
 
     
@@ -606,7 +610,7 @@ class DependentLoaderImplementation extends DependentLoader {
             container[0]=((DependentLoaderImplementation)loader).superGetResource(name);
     		return container[0]!=null;
     	}
-    };
+    }.name("resourceHunter");
     
 
     
@@ -644,7 +648,7 @@ class DependentLoaderImplementation extends DependentLoader {
             container[0]=((DependentLoaderImplementation)loader).superGetResourceAsStream(name);
     		return container[0]!=null;
 		}
-	};
+    }.name("resourceAsStreamHunter");
 
     /**
      * Load the class with the specified name.  This method searches for
@@ -691,10 +695,17 @@ class DependentLoaderImplementation extends DependentLoader {
     @Override
     public synchronized Class<?> loadClass(String name, boolean resolve)  		
     		throws ClassNotFoundException {
+        // (1) Check our previously loaded local class cache
+        Class<?> clazz=findLoadedClass0(name);
+        if (clazz != null) return clazz;
+
+
         Class<?>[] container=new Class[1];
         if(hunt(name, loadingHunter, container)){
             if (container[0]!=null && resolve)
                 resolveClass(container[0]);
+
+            rememberClass(name, container[0]);
             return container[0];
         };
 
@@ -711,24 +722,19 @@ class DependentLoaderImplementation extends DependentLoader {
             container[0]=((DependentLoaderImplementation) loader).shallowLoadClass(name, false);
     		return container[0]!=null;
 		}
-	};
+    }.name("loadingHunter");
 
     
     
-	private Class<?> shallowLoadClass(String name, boolean resolve){
+	private synchronized Class<?> shallowLoadClass(String name, boolean resolve){
     	
     	Class<?> clazz = null;
     	try {
-    		// (1) Check our previously loaded local class cache   	
-    		clazz=findLoadedClass0(name);
-    		if (clazz != null) return (clazz);
-        
-
     		// (2) Check our previously loaded class cache
     		clazz = findLoadedClass(name);
     		if (clazz != null) return (clazz);
 
-    		// (3) Load from this       	
+    		// (3) Load from this
     		try {
 				clazz = super.findClass(name);
 				if (clazz != null){
@@ -756,13 +762,17 @@ class DependentLoaderImplementation extends DependentLoader {
      * @param name Name of the resource to return
      */
     protected Class<?> findLoadedClass0(String name) {
-        ResourceEntry entry = resourceEntries.get(name);
-        if (entry != null) {
-            return entry.loadedClass;
+        Class<?> cachedClass = classCache.get(name);
+        if (cachedClass != null) {
+            return cachedClass;
         }
-        return (null);  // FIXME - findLoadedResource()
-
+        return (null);
     }
+
+    protected void rememberClass(String name, Class<?> rememberThis){
+        classCache.put(name, rememberThis);
+    }
+
 
 	void setDependencies(DependentLoaderImplementation[] actualDependencies) {
 		this.dependencies=actualDependencies;
