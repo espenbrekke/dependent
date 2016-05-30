@@ -23,6 +23,10 @@ build
 *.iws
 out
 
+gradle
+gradlew
+gradlew.bat
+
 ### Bower ###
 bower_components
 .bower-cache

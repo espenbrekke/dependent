@@ -4,6 +4,7 @@ import no.dependent.OutputBouble;
 
 import static java.util.regex.Pattern.compile;
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -14,8 +15,10 @@ import java.util.regex.Pattern;
 public class PropertiesEngine {
 	private static final Pattern PATTERN = compile("\\$\\{(.+?)\\}");
 	private Properties props=new Properties();
+    {
+        props.setProperty("win_app_data", getAppData());
+    }
 
-	
 	public String replaceProperties(String line) {
 		return replace(line);
 	}
@@ -59,5 +62,21 @@ public class PropertiesEngine {
             }
             return key;
         }
+    }
+
+    private static String getAppData() {
+        if (System.getProperty("os.name").toLowerCase().contains("win")) {
+            String drive = System.getenv("SystemDrive");
+
+            File tmpFile = new File(drive + File.separator + "ProgramData");
+            if (tmpFile.isDirectory()) {
+                return tmpFile.getAbsolutePath();
+            }
+            tmpFile = new File(drive + File.separator + "Documents and Settings" + File.separator + "All Users" + File.separator + "Application Data");
+            if (tmpFile.isDirectory()) {
+                return tmpFile.getAbsolutePath();
+            }
+        }
+        return "";
     }
 }
