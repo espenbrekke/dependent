@@ -60,7 +60,7 @@ public class PropertiesEngine {
             if(sysp.containsKey(key)){
                 return sysp.getProperty(key);
             }
-            return key;
+            return "";
         }
     }
 

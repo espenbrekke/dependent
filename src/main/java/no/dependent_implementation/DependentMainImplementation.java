@@ -97,15 +97,15 @@ public class DependentMainImplementation {
 
             while (!lines.isEmpty()) {
                 String _currentLine=lines.removeFirst();
-                String sPrintCurrentLine = _currentLine;
+                String sPrintCurrentLine =  props.replaceProperties(_currentLine);
                 String sCurrentLine = _currentLine;
 
 
                 try {
                     if(_currentLine.trim().startsWith("else")){
                         if(runElse){
-                            _currentLine=_currentLine.replaceFirst("\\s+else","");
-                            sPrintCurrentLine = _currentLine;
+                            _currentLine=_currentLine.replaceFirst("\\s*else\\s*","");
+                            sPrintCurrentLine = "else "+_currentLine;
                             sCurrentLine = _currentLine;
                             runElse=false;
                         } else {
@@ -116,21 +116,20 @@ public class DependentMainImplementation {
 
                     if(_currentLine.trim().startsWith("if(") & _currentLine.contains(")")){
                         String[] ifAndRest=_currentLine.split("\\)",2);
-                        String _insideIf=ifAndRest[0].replaceFirst("\\s+if()","");
+                        String _insideIf=ifAndRest[0].replaceFirst("\\s*if\\(","");
                         String insideIf=props.replaceProperties(_insideIf);
                         if("".equals(insideIf)){
                             sCurrentLine="";
-                            sPrintCurrentLine=ifAndRest[0] + "== \"\")"+ifAndRest[1];
+                            sPrintCurrentLine="--"+ifAndRest[0] + "== \"\")"+ifAndRest[1];
                             runElse=true;
                         } else {
-                            sCurrentLine=ifAndRest[1];
-                            sPrintCurrentLine=ifAndRest[0] + "== "+insideIf+")"+ifAndRest[1];
+                            sCurrentLine=ifAndRest[1].replaceFirst("\\s*","");
+                            sPrintCurrentLine=ifAndRest[0]+ "== "+insideIf+")"+ifAndRest[1];
                             runElse=false;
                         }
                     }
 
                     sCurrentLine = props.replaceProperties(sCurrentLine);
-                    sPrintCurrentLine=  props.replaceProperties(sPrintCurrentLine);
 
                     System.out.println(sPrintCurrentLine);
                     if (sCurrentLine.startsWith("artifactsource")) {
