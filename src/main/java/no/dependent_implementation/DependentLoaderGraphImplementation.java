@@ -288,7 +288,7 @@ class DependentLoaderGraphImplementation implements DependentLoaderGraph{
 		try {
 			Result<File> localFileName=dependencyManager.getLocalFile(artifactId);
 			
-			if(localFileName.success()) theLoader=new DependentLoaderImplementation(artifactId, localFileName.val.toURI().toURL(), exposed, parentLoader);
+			if(localFileName.success()) theLoader=new DependentLoaderImplementation(artifactId, new URL("file://"+localFileName.val.getCanonicalPath()), exposed, parentLoader);
 			else  theLoader=new DependentLoaderImplementation(artifactId, exposed, parentLoader);
 			setLoader(theLoader);
 			
