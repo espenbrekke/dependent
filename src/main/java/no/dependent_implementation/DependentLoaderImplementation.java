@@ -1,6 +1,7 @@
 package no.dependent_implementation;
 
 import java.io.*;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
@@ -94,37 +95,36 @@ class DependentLoaderImplementation extends DependentLoader {
             HashSet<String> newEntries=new HashSet<String>();
 
             for(URL url:this.getURLs()){
-                File asFile=new File(url.getFile());
-                if(asFile.isDirectory()){
-                    try {
-                        Files.walkFileTree(asFile.toPath(), new AddStringVisitor(asFile, newEntries));
-                    } catch (Exception e){
-                        OutputBouble.reportError(e);
-                    }
-                } else if(asFile.exists() && asFile.getName().endsWith(".jar")){
-                    ZipFile zipFile = null;
-
-                    try {
-                        zipFile = new ZipFile(asFile);
-                        Enumeration<? extends ZipEntry> e = zipFile.entries();
-                        while (e.hasMoreElements()) {
-                            ZipEntry entry = e.nextElement();
-                            String entryName = entry.getName();
-                            if(!entry.isDirectory())  newEntries.add(entryName);
-                        }
-                    }
-                    catch (IOException ioe) {
-                    }
-                    finally {
+                try {
+                    File asFile = new File(url.toURI());
+                    if (asFile.isDirectory()) {
                         try {
-                            if (zipFile!=null) {
-                                zipFile.close();
+                            Files.walkFileTree(asFile.toPath(), new AddStringVisitor(asFile, newEntries));
+                        } catch (Exception e) {
+                            OutputBouble.reportError(e);
+                        }
+                    } else if (asFile.exists() && asFile.getName().endsWith(".jar")) {
+                        ZipFile zipFile = null;
+
+                        try {
+                            zipFile = new ZipFile(asFile);
+                            Enumeration<? extends ZipEntry> e = zipFile.entries();
+                            while (e.hasMoreElements()) {
+                                ZipEntry entry = e.nextElement();
+                                String entryName = entry.getName();
+                                if (!entry.isDirectory()) newEntries.add(entryName);
+                            }
+                        } catch (IOException ioe) {
+                        } finally {
+                            try {
+                                if (zipFile != null) {
+                                    zipFile.close();
+                                }
+                            } catch (IOException ioe) {
                             }
                         }
-                        catch (IOException ioe) {
-                        }
                     }
-                }
+                } catch (URISyntaxException e) {}
             }
 
             entries=newEntries;
