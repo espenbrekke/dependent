@@ -4,7 +4,7 @@ apply plugin: 'java'
 description = ''
 
 group = 'no.dependent'
-version = '0.88'
+version = '0.89'
 
 repositories {
 	    maven { url rootProject.getRootDir().toURL().toString()+"build/artifacts/" };

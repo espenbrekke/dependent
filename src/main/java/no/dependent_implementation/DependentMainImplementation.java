@@ -236,9 +236,9 @@ public class DependentMainImplementation {
                             ToRun run = new ToRun(
                                     artifactSlashMethod[1],
                                     loaderGraph.enshureJarLoaded(artifactSlashMethod[0]));
+                            run.addMainArgs(mainArgs);
                             if (methodAndParams.length > 1) {
                                 String[] args = Arrays.copyOfRange(methodAndParams, 1, methodAndParams.length);
-                                run.addMainArgs(mainArgs);
                                 run.addMainArgs(args);
                             }
                             try {
