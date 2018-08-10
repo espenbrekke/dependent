@@ -11,8 +11,7 @@ import no.dependent.DependentLoaderConfiguration;
 
 import no.dependent.OutputBouble;
 
-public class DependentRepositoryManager {
-	private DependentRepository[] repositories={};
+public class FeatureManager {
 
 	private Map<Artifact,Feature> artifactLocations=new HashMap<>();
     

@@ -4,9 +4,9 @@ import java.io.*;
 import java.net.URI;
 
 import no.dependent.DependentFactory;
+import no.dependent.IOUtils;
 import no.dependent.OutputBouble;
 import no.dependent.ResourceFile;
-import sun.misc.IOUtils;
 
 public class ResourceFileImplementation implements ResourceFile {
 	final String resourceId;
@@ -30,7 +30,7 @@ public class ResourceFileImplementation implements ResourceFile {
 	
     protected String data(){
         try {
-            byte[] result = IOUtils.readFully(getStream(),Integer.MAX_VALUE, true);
+            byte[] result = IOUtils.readFully(getStream());
             return new String(result);
         } catch (Exception e){
             return e.toString();

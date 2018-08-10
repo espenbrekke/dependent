@@ -12,8 +12,6 @@ public abstract class DependentFactory {
     public abstract DependentLoaderGraph getGraph();
     public abstract DependentTracker getTracker();
 
-    public abstract RemoteRepositories remoteRepositories(String ... urls);
-
     public abstract void executeScript(String[] script,String[] mainParams);
 
     public abstract Class mainClass();

@@ -1,8 +1,8 @@
 package no.dependent_implementation;
 
-import java.util.ArrayList;import java.util.List;
+import no.dependent.Artifact;
 
-import org.eclipse.aether.artifact.Artifact;
+import java.util.ArrayList;import java.util.List;
 
 public class Exposure {
 	private List<ExposureFilter> exposed=new ArrayList<ExposureFilter>();

@@ -10,12 +10,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
-import no.dependent.DependentLoader;
-import no.dependent.DependentLoaderConfiguration;
-import no.dependent.DependentLoaderGraph;
-import no.dependent.OutputBouble;
-import org.eclipse.aether.artifact.Artifact;
-import org.eclipse.aether.artifact.DefaultArtifact;
+import no.dependent.*;
 
 class DependentLoaderImplementation extends DependentLoader {
     private int loaderId=DependentLoaderGraphImplementation.getNewLoaderId();
@@ -191,7 +186,7 @@ class DependentLoaderImplementation extends DependentLoader {
     
     public DependentLoaderImplementation addJarFileDependency(String artifact,URL jarFile) {
 
-        Artifact checkedArtifact=new DefaultArtifact(artifact);
+        Artifact checkedArtifact=new Artifact(artifact);
         for (DependentLoaderImplementation existing : dependencies) {
             if(existing.artifact.equals(checkedArtifact)) return null;
         }
@@ -380,10 +375,10 @@ class DependentLoaderImplementation extends DependentLoader {
             Artifact af=null;
             try{
                 String[] split=artifact.split(":",3);
-                if(split.length==3)  af=new DefaultArtifact(artifact);
-                else if(split.length==2)  af=new DefaultArtifact(split[0],split[1],"jar","?");
-                else if(split.length==1)  af=new DefaultArtifact(split[0],"unknown","jar","?");
-                else af=new DefaultArtifact("no.dbwatch.unnamed:unnamed_artifact:1");
+                if(split.length==3)  af=new Artifact(artifact);
+                else if(split.length==2)  af=new Artifact(split[0]+":"+split[1]);
+                else if(split.length==1)  af=new Artifact(split[0]+":unknown");
+                else af=new Artifact("no.dbwatch.unnamed:unnamed_artifact:1");
             } catch (Exception e){
                 //   e.printStackTrace();
             }

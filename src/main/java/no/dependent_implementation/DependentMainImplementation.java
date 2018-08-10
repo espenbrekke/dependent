@@ -1,7 +1,6 @@
 package no.dependent_implementation;
 
 import no.dependent.*;
-import no.dependent_implementation.utils.Booter;
 
 import java.io.*;
 import java.nio.file.Path;
@@ -12,8 +11,8 @@ import java.util.LinkedList;
 import java.util.List;
 
 public class DependentMainImplementation {
-    private static DependentLoaderGraphImplementation loaderGraph = (DependentLoaderGraphImplementation) DependentFactory.get().getGraph();// DependentLoaderGraphImplementation.create(dependencyManager, DependentMain.class.getClassLoader());
-    private static DependentRepositoryManager dependencyManager = loaderGraph.dependencyManager;
+    private static DependentLoaderGraphImplementation loaderGraph = (DependentLoaderGraphImplementation) DependentFactory.get().getGraph();// DependentLoaderGraphImplementation.create(featureManager, DependentMain.class.getClassLoader());
+    private static FeatureManager featureManager = loaderGraph.featureManager;
 
     public static void main(String[] args) {
         String configFileName = "dependent.conf";
@@ -132,28 +131,7 @@ public class DependentMainImplementation {
                     sCurrentLine = props.replaceProperties(sCurrentLine);
 
                     System.out.println(sPrintCurrentLine);
-                    if (sCurrentLine.startsWith("artifactsource")) {
-                        String artifactsource = sCurrentLine.replaceFirst("artifactsource", " ").replaceFirst("\\s+", "");
-                        String[] artifactsourceParts = artifactsource.split("\\s+");
-
-                        String artifactsourceUrl = get(artifactsourceParts, 0);
-                        String repoPath = get(artifactsourceParts, 1);
-                        String repoName = get(artifactsourceParts, 2);
-                        String groupFilter = get(artifactsourceParts, 3);
-
-                        if (!("".equals(artifactsourceUrl) || "".equals(repoPath))) {
-                            dependencyManager.addSource(artifactsourceUrl, repoName, repoPath, groupFilter, artifactsourceParts);
-                        }
-                    } else if (sCurrentLine.startsWith("localstore")) {
-                        String wothoutLocalstore = sCurrentLine.replaceFirst("localstore\\s+", "");
-                        String[] fileThenName = wothoutLocalstore.split("\\s+");
-
-                        String repoPath = get(fileThenName, 0);
-                        String repoName = get(fileThenName, 1);
-                        String groupFilter = get(fileThenName, 2);
-                        dependencyManager.addLocalStore(repoPath, fileThenName[1], groupFilter);
-
-                    } else if (sCurrentLine.startsWith("include")) {
+                    if (sCurrentLine.startsWith("include")) {
                         String withoutInclude = sCurrentLine.replaceFirst("include", "").replaceFirst("\\s+", "");
                         lines.addAll(0, readFileLines(withoutInclude));
                     } else if (sCurrentLine.startsWith("stop")) {
@@ -193,7 +171,7 @@ public class DependentMainImplementation {
                                 System.setErr(printStream(tmpSysErr, streamNameValue[1], sysErr));
                                 tmpSysErr = null;
                             } else if ("dependent-log".equals(streamNameValue[0].toLowerCase()) && tmpSysErr != null) {
-                                Booter.setLogFilePlacement(new File(streamNameValue[1]));
+                                //Booter.setLogFilePlacement(new File(streamNameValue[1]));
                             }
                         }
                     } else if (sCurrentLine.startsWith("mainloader")) {
@@ -202,26 +180,6 @@ public class DependentMainImplementation {
                     } else if (sCurrentLine.startsWith("import")) {
                         String toImport = sCurrentLine.replaceFirst("import", "").replaceAll("\\s+", "");
                         loaderGraph.enshureJarLoaded(toImport);
-                    } else if (sCurrentLine.startsWith("get")) {
-                        String toGet = sCurrentLine.replaceFirst("get", "").replaceAll("\\s+", "");
-                        loaderGraph.getJar(toGet);
-                    }
-                    if (sCurrentLine.startsWith("copy")) {
-                        String[] copyParams = sCurrentLine.replaceFirst("copy", " ").replaceFirst("\\s+", "").split("\\s+");
-
-                        String fromRepo = get(copyParams, 0);
-                        String toRepo = get(copyParams, 1);
-                        String filter = get(copyParams, 2);
-                        String[] flags = getFlags(copyParams);
-
-                        if (!"".equals(fromRepo) && !"".equals(toRepo)) {
-                            loaderGraph.copy(fromRepo, toRepo, filter, flags);
-                        }
-                    } else if (sCurrentLine.startsWith("download_flat")) {
-                        String[] whatWhereFlags = sCurrentLine.replaceFirst("download_flat", " ").replaceFirst("\\s+", "").split("\\s+");
-                        if (whatWhereFlags.length > 1) {
-                            loaderGraph.downloadFlat(whatWhereFlags[0], whatWhereFlags[1]);
-                        }
                     } else if (sCurrentLine.startsWith("loadartifact")) {
                         String toLoad = sCurrentLine.replaceFirst("loadartifact", "").replaceAll("\\s+", "");
                         loaderGraph.enshureJarLoaded(toLoad);

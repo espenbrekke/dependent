@@ -27,10 +27,6 @@ public class DependentFactoryImplementation extends DependentFactory {
         return DependentMainImplementation.class;
     }
 
-    public RemoteRepositories remoteRepositories(String ... urls){
-        return new RemoteRepositoriesImplementation(urls);
-    }
-
     public void executeScript(String[] script,String[] mainParams){
         ArrayList<String> scriptAsList=new ArrayList<String>();
         for (int i = 0; i < script.length; i++) {

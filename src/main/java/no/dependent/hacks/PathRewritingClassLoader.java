@@ -1,8 +1,6 @@
 package no.dependent.hacks;
 
 
-import sun.misc.Resource;
-import sun.misc.URLClassPath;
 
 import java.io.IOException;
 import java.lang.Override;
@@ -27,8 +25,8 @@ public class PathRewritingClassLoader  extends URLClassLoader {
 
         this.prefix=prefix+"/";
 
-        _ucp=new URLClassPath(getURLs());
         _acc=AccessController.getContext();
+        _ucp=new URLClassPath(getURLs(), _acc);
     }
 
     public PathRewritingClassLoader(String prefix,URL[] urls, ClassLoader parent) {
@@ -110,14 +108,14 @@ public class PathRewritingClassLoader  extends URLClassLoader {
             // Use (direct) ByteBuffer:
             CodeSigner[] signers = res.getCodeSigners();
             CodeSource cs = new CodeSource(url, signers);
-            sun.misc.PerfCounter.getReadClassBytesTime().addElapsedTimeFrom(t0);
+            PerfCounter.getReadClassBytesTime().addElapsedTimeFrom(t0);
             return defineClass(name, bb, cs);
         } else {
             byte[] b = res.getBytes();
             // must read certificates AFTER reading bytes.
             CodeSigner[] signers = res.getCodeSigners();
             CodeSource cs = new CodeSource(url, signers);
-            sun.misc.PerfCounter.getReadClassBytesTime().addElapsedTimeFrom(t0);
+            PerfCounter.getReadClassBytesTime().addElapsedTimeFrom(t0);
             return defineClass(name, b, 0, b.length, cs);
         }
     }
