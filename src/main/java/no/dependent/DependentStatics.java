@@ -5,10 +5,4 @@ public class DependentStatics {
     public static DependentLoaderGraph getGraph(){
         return graph;
     }
-
-    private static final DependentTracker tracker=DependentFactory.get().getTracker();
-    public static DependentTracker getTracker(){
-        return tracker;
-    }
-
 }

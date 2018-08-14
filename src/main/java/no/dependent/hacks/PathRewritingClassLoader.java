@@ -11,11 +11,11 @@ import java.security.*;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
 
-public class PathRewritingClassLoader  extends URLClassLoader {
-    /* The search path for classes and resources */
-    private URLClassPath _ucp;
-
-    /* The context to be used when loading classes and resources */
+public abstract class PathRewritingClassLoader  extends URLClassLoader {
+    public PathRewritingClassLoader(){
+        super(null);
+    }
+    /*
     private AccessControlContext _acc;
 
     private String prefix;
@@ -46,17 +46,7 @@ public class PathRewritingClassLoader  extends URLClassLoader {
             e.printStackTrace();
         }
     }
-    /**
-     * Finds and loads the class with the specified name from the URL search
-     * path. Any URLs referring to JAR files are loaded and opened as needed
-     * until the class is found.
-     *
-     * @param name the name of the class
-     * @return the resulting class
-     * @throws ClassNotFoundException if the class could not be found,
-     *                                or if the loader is closed.
-     * @throws NullPointerException   if {@code name} is {@code null}.
-     */
+
     protected Class<?> findClass(final String name)
             throws ClassNotFoundException {
         final Class<?> result;
@@ -87,11 +77,7 @@ public class PathRewritingClassLoader  extends URLClassLoader {
         return result;
     }
 
-    /*
-     * Defines a Class using the class bytes obtained from the specified
-     * Resource. The resulting Class must be resolved before it can be
-     * used.
-     */
+
     private Class<?> _defineClass(String name, Resource res) throws IOException {
         long t0 = System.nanoTime();
         int i = name.lastIndexOf('.');
@@ -143,11 +129,6 @@ public class PathRewritingClassLoader  extends URLClassLoader {
         }
     }
 
-    /*
-     * Retrieve the package using the specified package name.
-     * If non-null, verify the package using the specified code
-     * source and manifest.
-     */
     private Package _getAndVerifyPackage(String pkgname,
                                         Manifest man, URL url) {
         Package pkg = getPackage(pkgname);
@@ -172,10 +153,6 @@ public class PathRewritingClassLoader  extends URLClassLoader {
         return pkg;
     }
 
-    /*
- * Returns true if the specified package name is sealed according to the
- * given manifest.
- */
     private boolean _isSealed(String name, Manifest man) {
         String path = name.replace('.', '/').concat("/");
         Attributes attr = man.getAttributes(path);
@@ -195,5 +172,5 @@ public class PathRewritingClassLoader  extends URLClassLoader {
     @Override
     public URL getResource(String name){
         return super.getResource(prefix+name);
-    }
+    }*/
 }

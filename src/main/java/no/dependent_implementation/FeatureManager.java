@@ -1,20 +1,45 @@
 package no.dependent_implementation;
 
 import java.io.File;
-import java.io.InputStream;
 import java.util.*;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipFile;
 
 import no.dependent.Artifact;
-import no.dependent.DependentLoaderConfiguration;
 
 import no.dependent.OutputBouble;
+import no.dependent_implementation.feature.Feature;
 
 public class FeatureManager {
 
+    private List<Feature> features=new ArrayList<>();
 	private Map<Artifact,Feature> artifactLocations=new HashMap<>();
-    
+
+	public Feature getFeature(Artifact artifact){
+	    var fromMap=artifactLocations.get(artifact);
+	    if(fromMap!=null) return fromMap;
+	    return null;
+    }
+
+    public void addFeature(String pathToFeature){
+	    File featureFile=new File(pathToFeature);
+	    if(featureFile.exists()){
+	        try{
+                Feature newFeature=new Feature(featureFile);
+                features.add(newFeature);
+                newFeature.index();
+                var artifacts=newFeature.getArtifacts();
+
+                for (int j = 0; j < artifacts.length; j++) {
+                    artifactLocations.put(artifacts[j],newFeature);
+                    artifactLocations.put(artifacts[j].setVersion(""),newFeature);
+                }
+            } catch (Exception e){
+
+            }
+        } else {
+
+        }
+    }
+
 /*	private ArtifactResult resolveArtifact(
 			Artifact artifact) throws Exception {
 		Throwable ex=null;

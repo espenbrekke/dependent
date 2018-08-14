@@ -7,8 +7,8 @@ import java.util.List;
 
 public class DependentFactoryImplementation extends DependentFactory {
     final ClassLoader parentLoader;
-    public DependentFactoryImplementation(ClassLoader parentLoader){
-        this.parentLoader=parentLoader;
+    public DependentFactoryImplementation(){
+        this.parentLoader=this.getClass().getClassLoader();
     }
 
     public ResourceFile resourceFile(String resourceId){
@@ -18,10 +18,6 @@ public class DependentFactoryImplementation extends DependentFactory {
     public DependentLoaderGraphImplementation getGraph(){
         return DependentLoaderGraphImplementation.get(parentLoader);
     }
-
-    public no.dependent.DependentTracker getTracker(){
-        return DependentTrackerImplementation.get();
-    };
 
     public Class mainClass(){
         return DependentMainImplementation.class;

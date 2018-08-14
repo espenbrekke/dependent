@@ -31,7 +31,7 @@ public class Exposure {
 		for (ExposureFilter filter : exposed) {
 			if(packageName.startsWith(filter.toPackage)){
 				if(filter.exposedLoader==null){
-					filter.exposedLoader=loaderGraph.enshureJarLoaded(filter.what);
+					filter.exposedLoader=loaderGraph.getLoader(filter.what);
 				}
 				if(filter.exposedLoader!=null){
 					retVal.add(filter.exposedLoader);

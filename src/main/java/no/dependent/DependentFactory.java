@@ -2,6 +2,7 @@ package no.dependent;
 
 
 import no.dependent.hacks.PathRewritingClassLoader;
+import no.dependent_implementation.DependentFactoryImplementation;
 
 import java.io.File;
 import java.lang.reflect.Constructor;
@@ -10,7 +11,6 @@ import java.net.*;
 public abstract class DependentFactory {
     public abstract ResourceFile resourceFile(String resourceId);
     public abstract DependentLoaderGraph getGraph();
-    public abstract DependentTracker getTracker();
 
     public abstract void executeScript(String[] script,String[] mainParams);
 
@@ -18,37 +18,8 @@ public abstract class DependentFactory {
 
     private static DependentFactory factoryImpl=null;
     public static DependentFactory get(){
-        if(factoryImpl!=null) return factoryImpl;
-        try{
-            Class<DependentFactory> factoryClass=(Class<DependentFactory> )dependentClassLoader().loadClass("no.dependent_implementation.DependentFactoryImplementation");
-            Constructor<DependentFactory> constructor=factoryClass.getConstructor(ClassLoader.class);
-            factoryImpl=constructor.newInstance(DependentFactory.class.getClassLoader());
-            return factoryImpl;
-        }
-        catch(Throwable e){
-            System.err.println("Fatal error:");
-            e.printStackTrace();
-            return null;
-        }
-    }
-
-    private static ClassLoader _dependentClassLoader=null;
-    private static ClassLoader dependentClassLoader(){
-        if(_dependentClassLoader!=null) return _dependentClassLoader;
-        Class mainImplementationClass=null;
-        try{
-            DependentFactory.class.getClassLoader().loadClass("no.dependent_implementation.DependentFactoryImplementation");
-            _dependentClassLoader= DependentFactory.class.getClassLoader();
-            return _dependentClassLoader;
-        }
-        catch(ClassNotFoundException e) {
-        }
-
-        if(DependentFactory.class.getClassLoader() instanceof URLClassLoader){
-            _dependentClassLoader=new PathRewritingClassLoader("private",(URLClassLoader)DependentFactory.class.getClassLoader());
-            return _dependentClassLoader;
-        }
-        return null;
+        if(factoryImpl==null) factoryImpl=new DependentFactoryImplementation();
+        return factoryImpl;
     }
 
     private static File getJarFile(Class aclass) {

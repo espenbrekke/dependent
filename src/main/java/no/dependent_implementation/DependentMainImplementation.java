@@ -136,6 +136,9 @@ public class DependentMainImplementation {
                         lines.addAll(0, readFileLines(withoutInclude));
                     } else if (sCurrentLine.startsWith("stop")) {
                         break;
+                    } else if (sCurrentLine.startsWith("feature")) {
+                        String withoutFeature = sCurrentLine.replaceFirst("feature", "").replaceFirst("\\s+", "");
+                        featureManager.addFeature(withoutFeature);
                     } else if (sCurrentLine.startsWith("export")) {
                         String withoutExport = sCurrentLine.replaceFirst("export", "").replaceFirst("\\s+", "");
                         String[] nameValue = withoutExport.split("\\s", 2);
@@ -174,15 +177,6 @@ public class DependentMainImplementation {
                                 //Booter.setLogFilePlacement(new File(streamNameValue[1]));
                             }
                         }
-                    } else if (sCurrentLine.startsWith("mainloader")) {
-                        String artifact = sCurrentLine.replaceFirst("mainloader", "").replaceAll("\\s+", "");
-                        loaderGraph.nameClassLoader(artifact, DependentMain.class.getClassLoader(), true);
-                    } else if (sCurrentLine.startsWith("import")) {
-                        String toImport = sCurrentLine.replaceFirst("import", "").replaceAll("\\s+", "");
-                        loaderGraph.enshureJarLoaded(toImport);
-                    } else if (sCurrentLine.startsWith("loadartifact")) {
-                        String toLoad = sCurrentLine.replaceFirst("loadartifact", "").replaceAll("\\s+", "");
-                        loaderGraph.enshureJarLoaded(toLoad);
                     } else if (sCurrentLine.startsWith("run")) {
                         String theEssential = sCurrentLine.replaceFirst("run", "").replaceFirst("\\s+", "");
                         String[] methodAndParams = theEssential.split("\\s+");

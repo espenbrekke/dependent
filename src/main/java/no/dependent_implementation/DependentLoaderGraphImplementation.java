@@ -3,7 +3,6 @@ package no.dependent_implementation;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.net.URL;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
@@ -11,6 +10,7 @@ import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import no.dependent.*;
+import no.dependent_implementation.feature.Feature;
 
 class DependentLoaderGraphImplementation implements DependentLoaderGraph{
 	private static AtomicInteger _idCounter=new AtomicInteger(0);
@@ -29,7 +29,9 @@ class DependentLoaderGraphImplementation implements DependentLoaderGraph{
 
 	private DependentLoaderVisitor[] visitors={};
 
-	void setLoader(DependentLoaderImplementation loader){
+    private final Map<String, DependentLoaderImplementation> loaderMap=new HashMap<String, DependentLoaderImplementation>();
+
+    void setLoader(DependentLoaderImplementation loader){
 		synchronized (loaderMap){
 			this.loaderMap.put(loader.getArtifact(), loader);
 		}
@@ -81,7 +83,6 @@ class DependentLoaderGraphImplementation implements DependentLoaderGraph{
 
 	final FeatureManager featureManager;
 
-    private final Map<String, DependentLoaderImplementation> loaderMap=new HashMap<String, DependentLoaderImplementation>();
 
     private static class Wildcards{
         final String what;
@@ -100,117 +101,17 @@ class DependentLoaderGraphImplementation implements DependentLoaderGraph{
 		this.featureManager=featureManager;
         this.parentLoader=parentLoader;
 	}
-	
-	public DependentLoaderImplementation nameArtifact(String artifactId, URL[] jar, Object... dependsOn){
-		return nameArtifact(new Artifact(artifactId), jar, dependsOn);
-	}
-
-    public String[] getCompileClasspath(String ... artifactIds) {
-        List<String> list = new LinkedList<String>();
-        Set<Artifact> cutoff = new HashSet<Artifact>();
-
-        for(String artifactId : artifactIds) {
-			DependentLoaderImplementation depLoaderImpl = enshureJarLoaded(artifactId);
-            getCompileClasspath(list, cutoff, depLoaderImpl);
-        }
-
-        return list.toArray(new String[list.size()]);
-    }
-
-
-
-    private void getCompileClasspath(List<String> list, Set<Artifact> cutoff, DependentLoaderImplementation depLoader) {
-        if(!cutoff.contains(depLoader.artifact)) {
-            cutoff.add(depLoader.artifact);
-            DependentLoaderImplementation depLoaderImpl = enshureJarLoaded(depLoader.artifact);
-            for (URL url : depLoader.getURLs()) {
-                try {
-                    String path = Paths.get(url.toURI()).toFile().getAbsolutePath();
-                    if (!list.contains(path)) {
-                        list.add(path);
-                    }
-                } catch (Exception e) {}
-            }
-            for (DependentLoaderImplementation dep : depLoaderImpl.dependencies) {
-                getCompileClasspath(list, cutoff, dep);
-            }
-        }
-    }
-
-	public DependentLoaderImplementation nameArtifact(Artifact artifactId, URL[] jar, Object... dependsOn){
-		DependentLoaderImplementation theLoader=null;
-		if(jar==null) theLoader= new DependentLoaderImplementation(artifactId, exposed,parentLoader);
-		else theLoader= new DependentLoaderImplementation(artifactId,jar,exposed,parentLoader);
-		
-		List<DependentLoaderImplementation> dependencies=new ArrayList<DependentLoaderImplementation>();
-		
-		for (Object dependency : dependsOn) {
-			if(dependency instanceof DependentLoaderImplementation){
-				dependencies.add((DependentLoaderImplementation)dependency);
-			} else if(dependency instanceof String){
-				DependentLoaderImplementation candidate=enshureDependencyJarLoaded(artifactId, new Artifact((String)dependency));
-				if(candidate!=null)
-					dependencies.add((DependentLoaderImplementation)dependency);
-			} else if(dependency instanceof Artifact){
-				DependentLoaderImplementation candidate=enshureDependencyJarLoaded(artifactId, (Artifact)dependency);
-				if(candidate!=null)
-					dependencies.add((DependentLoaderImplementation)dependency);
-			} 
-		}
-		theLoader.setDependencies(dependencies.toArray(new DependentLoaderImplementation[dependencies.size()]));
-		
-		if(artifactId!=null){
-			assert(theLoader!=null);
-			setLoader(theLoader);
-			assert(loaderMap.get(toString(artifactId))!=null);
-		}
-		visitLoader(theLoader);
-		return theLoader;
-	}
-	
-	public void nameClassLoader(String artifactId, ClassLoader loader, boolean recursive){
-		nameClassLoader(new Artifact(artifactId), loader, recursive);
-	}
-
-	public void nameClassLoader(Artifact artifactId, ClassLoader loader,boolean recursive){
-		DependentLoaderImplementation theLoader=null;
-		theLoader= new DependentLoaderImplementation(artifactId,loader, exposed,parentLoader);
-
-		if(artifactId!=null){
-			assert(theLoader!=null);
-			setLoader(theLoader);
-			assert(loaderMap.get(toString(artifactId))!=null);
-		}
-		if(recursive){
-			OutputBouble bouble=OutputBouble.push();
-
-			try {
-				Artifact[] dependencies=featureManager.getDirectDependencies(artifactId);
-				for (Artifact dependency : dependencies) {
-					if(!loaderMap.containsKey(toString(dependency))){
-						nameClassLoader(dependency, theLoader, recursive);
-					}
-				}
-			} catch (Exception e) {
-				OutputBouble.reportError(e);
-			} finally {
-				bouble.pop();
-				if(bouble.isError) bouble.writeToParent();
-			}
-		}
-		visitLoader(theLoader);
-	}
 
 	public DependentLoaderImplementation enshureJarLoaded(String artifactId){
-		return enshureJarLoaded(new Artifact(artifactId));
+		return getLoader(new Artifact(artifactId));
 	}
 
 	private DependentLoaderImplementation enshureDependencyJarLoaded(Artifact dependent, String dependency){
-		return enshureJarLoaded(unify(dependent,new Artifact(dependency)));
+		return getLoader(unify(dependent,new Artifact(dependency)));
     }
 	
 	private DependentLoaderImplementation enshureDependencyJarLoaded(Artifact dependent, Artifact dependency){
-			return enshureJarLoaded(unify(dependent,dependency));
+			return getLoader(unify(dependent,dependency));
 	}
 
 	@Override
@@ -218,8 +119,8 @@ class DependentLoaderGraphImplementation implements DependentLoaderGraph{
 		Artifact artifact=new Artifact(artifactId);
 		return findOverride(artifact);
 	}
+
     public DependentLoaderImplementation findOverride(Artifact artifactId){
-import no.dependent_implementation.utils.Booter;
         if(overridingLoaders.size()==0) return null;
         String asString=artifactId.toString();
         for (Wildcards wild: overridingLoaders) {
@@ -265,56 +166,56 @@ import no.dependent_implementation.utils.Booter;
     }
 
 
-    public DependentLoaderImplementation enshureJarLoaded(Artifact _artifactId){
+    public DependentLoaderImplementation getLoader(Artifact _artifactId){
 		Artifact artifactId=unify(_artifactId);
 
         if("dependent".equals(artifactId.getArtifactId()) && "no.dbwatch".equals(artifactId.getGroupId())){
             return null;
-        }
+        };
+
         DependentLoaderImplementation theLoader=findOverride(artifactId);
         if(theLoader!=null){
 			visitLoader(theLoader);
 			return theLoader;
 		}
+
 		if(loaderMap.containsKey(toString(artifactId))) return loaderMap.get(toString(artifactId));
 		// Fetch jar and dependencies.
 		OutputBouble bouble=OutputBouble.push();
 
 		try {
-			Result<File> localFileName=featureManager.getLocalFile(artifactId);
-			
-			if(localFileName.success()) theLoader=new DependentLoaderImplementation(artifactId, localFileName.val.getAbsoluteFile().toURI().toURL(), exposed, parentLoader);
-			else  theLoader=new DependentLoaderImplementation(artifactId, exposed, parentLoader);
-			setLoader(theLoader);
-			
-			List<Artifact> dependencies=featureManager.getDirectDependencies(artifactId);
+		    Feature feature=featureManager.getFeature(artifactId);
+		    if(feature != null){
+                theLoader=new DependentLoaderImplementation(artifactId, exposed, parentLoader, featureManager.getFeature(artifactId), this);
 
-			DependentLoaderImplementation[] actualDependencies=new DependentLoaderImplementation[dependencies.size()+theLoader.dependencies.length];
-			int i=0;
-			for(DependentLoaderImplementation dependencyFromConf:theLoader.dependencies){
-				actualDependencies[i++]=dependencyFromConf;
-			}
-			for (Artifact dependencyId : dependencies) {
-				
-				DependentLoaderImplementation loader=enshureDependencyJarLoaded(artifactId,dependencyId);
-				if(loader==null){
-                    OutputBouble.logFile.println(artifactId.toString() + ":");
-                    OutputBouble.logFile.println("\t Missing dependency "+dependencyId.toString());
-                    OutputBouble.logFile.println("\t Ignoring");
-				} else {
-                    actualDependencies[i++] = loader;
+                setLoader(theLoader);
+
+                Artifact[] dependencies=feature.getDirectDependencies(theLoader.artifact);
+
+                DependentLoaderImplementation[] actualDependencies=new DependentLoaderImplementation[ dependencies.length ];
+                int i=0;
+                for (Artifact dependencyId : dependencies) {
+                    DependentLoaderImplementation loader=getLoader(dependencyId);
+                    if(loader==null){
+                        OutputBouble.logFile.println(artifactId.toString() + ":");
+                        OutputBouble.logFile.println("\t Missing dependency "+dependencyId.toString());
+                        OutputBouble.logFile.println("\t Ignoring");
+                    } else {
+                        actualDependencies[i++] = loader;
+                    }
                 }
-			}
-            if(actualDependencies.length>i){
-                actualDependencies=Arrays.copyOf(actualDependencies,i);
+                if(actualDependencies.length>i){
+                    actualDependencies=Arrays.copyOf(actualDependencies,i);
+                }
+
+                theLoader.setDependencies(actualDependencies);
+
+                visitLoader(theLoader);
+                return theLoader;
+            } else {
+                feature=featureManager.getFeature(artifactId);
+		        return null;
             }
-
-			theLoader.setDependencies(actualDependencies);
-
-            extraDependencies.loaderAdded(theLoader);
-
-			visitLoader(theLoader);
-			return theLoader;
 		} catch (Exception e) {
 			OutputBouble.reportError(e);
 			return theLoader;
@@ -322,7 +223,6 @@ import no.dependent_implementation.utils.Booter;
 			bouble.pop();
 			if(bouble.isError) bouble.writeToParent();
 		}
-		//return null;
 	}
 
 
@@ -337,7 +237,8 @@ import no.dependent_implementation.utils.Booter;
 				Artifact retVal=new Artifact(
 						artifact.getGroupId(),
 						artifact.getArtifactId(),
-						version);
+						version,
+                        artifact.getClassName());
 				return retVal;
 			}
 		}
@@ -357,7 +258,8 @@ import no.dependent_implementation.utils.Booter;
 				Artifact retVal=new Artifact(
 						dependency.getGroupId(),
 						dependency.getArtifactId(),
-						version);
+						version,
+                        dependency.getClassName());
 				return retVal;
 			}
 		}
@@ -432,34 +334,6 @@ import no.dependent_implementation.utils.Booter;
 		return null;
 	}
 
-	public DependentLoaderImplementation cloneLoader(DependentLoader loader, String aditionalDependency){
-        DependentLoaderImplementation otherAsImplementation=(DependentLoaderImplementation)loader;
-       
-		DependentLoaderImplementation newLoader=new DependentLoaderImplementation(otherAsImplementation.artifact,loader.getURLs(), exposed, otherAsImplementation.parent);
-		newLoader.dependencies = otherAsImplementation.dependencies;
-		
-		if(!"".equals(aditionalDependency)){
-			DependentLoaderImplementation dependency=enshureDependencyJarLoaded(otherAsImplementation.artifact, aditionalDependency);
-			ArrayList<DependentLoaderImplementation> depList = new ArrayList<DependentLoaderImplementation>();
-			for (DependentLoaderImplementation dependentLoaderImplementation : newLoader.dependencies) {
-				depList.add(dependentLoaderImplementation);
-			}
-			depList.add(dependency);
-			newLoader.setDependencies(depList.toArray(new DependentLoaderImplementation[depList.size()]));
-		}
-		visitLoader(newLoader);
-		return newLoader;
-	}
-	
-	public DependentLoaderImplementation cloneLoader(DependentLoader loader){
-        DependentLoaderImplementation otherAsImplementation=(DependentLoaderImplementation)loader;
-		DependentLoaderImplementation newLoader=new DependentLoaderImplementation(otherAsImplementation.artifact,loader.getURLs(), exposed, otherAsImplementation.parent);
-		newLoader.setDependencies(otherAsImplementation.dependencies);
-
-		visitLoader(newLoader);
-		return newLoader;
-	}
-
 	public void expose(String what, String toPackage) {
 		System.out.println("exposing " + what + " to " + toPackage);
         exposed.expose(new Artifact(what), toPackage);
@@ -472,7 +346,7 @@ import no.dependent_implementation.utils.Booter;
 
 	@Override
     public void registerUnpackedJar(String what, String ... where){
-        DependentLoaderImplementation loader= DependentLoaderImplementation.createClassFileLoader(what, where, exposed, parentLoader);
+        DependentLoaderImplementation loader= DependentLoaderImplementation.createClassFileLoader(new Artifact(what), where, exposed, parentLoader);
 		File[] files=new File[where.length];
 		int i=0;
 		for(String directory:where){
@@ -482,11 +356,6 @@ import no.dependent_implementation.utils.Booter;
 		setLoader(loader);
         overridingLoaders.add(new Wildcards(what, loader, files));
     }
-
-	public void reloadJar(String artifactId){
-		loaderMap.remove(artifactId);
-		enshureJarLoaded(artifactId);
-	}
 
 	public void unifyGroupVersion(String group,String version){
 		unified.put(group, version);

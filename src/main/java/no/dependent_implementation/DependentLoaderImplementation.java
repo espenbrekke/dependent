@@ -1,16 +1,17 @@
 package no.dependent_implementation;
 
 import java.io.*;
-import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.security.AccessControlContext;
+import java.security.AccessController;
+import java.security.PrivilegedExceptionAction;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipFile;
 
 import no.dependent.*;
+import no.dependent_implementation.feature.Feature;
 
 class DependentLoaderImplementation extends DependentLoader {
     private int loaderId=DependentLoaderGraphImplementation.getNewLoaderId();
@@ -35,9 +36,20 @@ class DependentLoaderImplementation extends DependentLoader {
     private Map<String,DependentLoaderImplementation> configuredChildren=null;
     private Map<String,DependentLoaderConfiguration> configs=new HashMap();
 
+
+    private final Feature feature;
+    private final  Exposure exposure;
+
+    protected ClassLoader proxyFor = null;
+    protected ClassLoader parent = null;
+    protected ClassLoader system = null;
+
+    /* The context to be used when loading classes and resources */
+    private final AccessControlContext acc;
+
     @Override
     public void extractTo(File targetRoot){
-        Set<String> resources=getEntries();
+        String[] resources=getEntries();
         for(String resource:resources){
             try{
                 InputStream inputStream=this.getResourceAsStream(resource);
@@ -84,60 +96,17 @@ class DependentLoaderImplementation extends DependentLoader {
         }
     }
 
-    private Set<String> entries=null;
-    public Set<String> getEntries(){
-        if(entries==null){
-            HashSet<String> newEntries=new HashSet<String>();
-
-            for(URL url:this.getURLs()){
-                try {
-                    File asFile = new File(url.toURI());
-                    if (asFile.isDirectory()) {
-                        try {
-                            Files.walkFileTree(asFile.toPath(), new AddStringVisitor(asFile, newEntries));
-                        } catch (Exception e) {
-                            OutputBouble.reportError(e);
-                        }
-                    } else if (asFile.exists() && asFile.getName().endsWith(".jar")) {
-                        ZipFile zipFile = null;
-
-                        try {
-                            zipFile = new ZipFile(asFile);
-                            Enumeration<? extends ZipEntry> e = zipFile.entries();
-                            while (e.hasMoreElements()) {
-                                ZipEntry entry = e.nextElement();
-                                String entryName = entry.getName();
-                                if (!entry.isDirectory()) newEntries.add(entryName);
-                            }
-                        } catch (IOException ioe) {
-                        } finally {
-                            try {
-                                if (zipFile != null) {
-                                    zipFile.close();
-                                }
-                            } catch (IOException ioe) {
-                            }
-                        }
-                    }
-                } catch (URISyntaxException e) {}
-            }
-
-            entries=newEntries;
-        }
-        return entries;
+    public static DependentLoaderImplementation createClassFileLoader(Artifact what,String[] where,Exposure exposed,ClassLoader parentLoader){
+        return null;
     }
 
-	private final  Exposure exposure;
-	
-	protected ClassLoader proxyFor = null;
-	protected ClassLoader parent = null;
-    protected ClassLoader system = null;
-
+    public String[] getEntries(){
+        return feature.getEntries(artifact);
+    }
 
     public boolean isInQuarantine(){
         return inQuarantine;
     }
-
 
     protected DependentLoaderImplementation[] dependencies=new DependentLoaderImplementation[0];
 
@@ -147,14 +116,6 @@ class DependentLoaderImplementation extends DependentLoader {
 
     public DependentLoaderGraphImplementation getGraph(){
         return graph;
-    }
-
-    @Override
-    public DependentLoader replaceInGraph(URL ... urls){
-        DependentLoaderImplementation newLoader=new DependentLoaderImplementation(artifact, urls,exposure,parent);
-        newLoader.dependencies=dependencies;
-        graph.setLoader(newLoader);
-        return newLoader;
     }
 
     public void addLibraryPath(String path){
@@ -182,20 +143,6 @@ class DependentLoaderImplementation extends DependentLoader {
         DependentLoaderImplementation[] newDependencies=Arrays.copyOf(dependencies,dependencies.length+1);
         newDependencies[newDependencies.length-1]=toLoaderImplementation;
         dependencies=newDependencies;
-    }
-    
-    public DependentLoaderImplementation addJarFileDependency(String artifact,URL jarFile) {
-
-        Artifact checkedArtifact=new Artifact(artifact);
-        for (DependentLoaderImplementation existing : dependencies) {
-            if(existing.artifact.equals(checkedArtifact)) return null;
-        }
-
-        DependentLoaderImplementation toLoader=new DependentLoaderImplementation(checkedArtifact, jarFile, exposure, parent);
-        DependentLoaderImplementation[] newDependencies=Arrays.copyOf(dependencies,dependencies.length+1);
-        newDependencies[newDependencies.length-1]=toLoader;
-        dependencies=newDependencies;
-        return toLoader;
     }
 
     private String findLibrary(String path, String libName) {
@@ -233,7 +180,6 @@ class DependentLoaderImplementation extends DependentLoader {
     	}
     	return super.findLibrary(libName);
     }
-    
 
     public DependentLoaderImplementation quarantine(){
     	inQuarantine=true;
@@ -249,8 +195,7 @@ class DependentLoaderImplementation extends DependentLoader {
     protected Map<String, Class<?>> classCache = new ConcurrentHashMap<>();
     
     public String toString(){
-        URL[] utls=getURLs();
-    	return "DependentLoader("+artifact.toString()+ " at "+ (utls.length>0?utls[0]:" nowere")+")"+tag ;
+    	return "DependentLoader("+artifact.toString()+")";
     }
     
     /**
@@ -265,7 +210,6 @@ class DependentLoaderImplementation extends DependentLoader {
             return size() > 1000;
         }
     };
-
 
     private abstract class Hunter<T>{
         public String name="";
@@ -355,85 +299,15 @@ class DependentLoaderImplementation extends DependentLoader {
         return false;
     }
 
-    static DependentLoaderImplementation createClassFileLoader(String artifact, String[] directories, Exposure exposure, ClassLoader parentLoader) {
-        File[] files=new File[directories.length];
-        int i=0;
-        for(String directory:directories){
-            files[i]=new File(directory);
-            i++;
-        }
-        return createClassFileLoader(artifact, files, exposure, parentLoader);
-    }
-    static DependentLoaderImplementation createClassFileLoader(String artifact, File[] directories, Exposure exposure, ClassLoader parentLoader){
-        try {
-            URL[] urls=new URL[directories.length];
-            int i=0;
-            for(File file:directories){
-                urls[i]=file.toURI().toURL();
-                i++;
-            }
-            Artifact af=null;
-            try{
-                String[] split=artifact.split(":",3);
-                if(split.length==3)  af=new Artifact(artifact);
-                else if(split.length==2)  af=new Artifact(split[0]+":"+split[1]);
-                else if(split.length==1)  af=new Artifact(split[0]+":unknown");
-                else af=new Artifact("no.dbwatch.unnamed:unnamed_artifact:1");
-            } catch (Exception e){
-                //   e.printStackTrace();
-            }
-            DependentLoaderImplementation loader = new DependentLoaderImplementation(af,urls , exposure, parentLoader);
-
-            return loader;
-        } catch (Exception e){
-            //e.printStackTrace();
-            return null;
-        }
-    }
-
-
-    public DependentLoaderImplementation(Artifact artifact, URL[] jarUrls, Exposure exposure, ClassLoader parentLoader) {
-        super(jarUrls, parentLoader);
-        this.artifact=artifact;
+    public DependentLoaderImplementation(Artifact artifact, Exposure exposure, ClassLoader parentLoader, Feature feature, DependentLoaderGraphImplementation graphImplementation) {
+        super(parentLoader);
+        this.artifact=feature.resolveVersion(artifact);
         this.parent = parentLoader;
         this.exposure=exposure;
         this.graph=exposure.getGraph();
+        this.feature=feature;
+        this.acc = AccessController.getContext();
         system = getSystemClassLoader();
-        readConfigurations();
-        addJarDeclaredDependencies();
-	}
-    
-	public DependentLoaderImplementation(Artifact artifact, URL jarUrl, Exposure exposure, ClassLoader parentLoader) {
-        super(wrap(jarUrl), parentLoader);
-        this.artifact=artifact;
-        this.parent = parentLoader;
-        this.exposure=exposure;
-        this.graph=exposure.getGraph();
-        system = getSystemClassLoader();
-        readConfigurations();
-        addJarDeclaredDependencies();
-	}
-
-    public DependentLoaderImplementation(Artifact artifact, Exposure exposure, ClassLoader parentLoader) {
-    	super(new URL[0], parentLoader);
-    	this.artifact=artifact;
-    	this.parent = parentLoader;
-        this.exposure=exposure;
-        this.graph=exposure.getGraph();
-        system = getSystemClassLoader();
-        readConfigurations();
-        addJarDeclaredDependencies();
-	}
-
-	public DependentLoaderImplementation(Artifact artifactId, ClassLoader delegate, Exposure exposure, ClassLoader parentLoader) {
-    	super(new URL[0], parentLoader);
-           	
-    	this.proxyFor=delegate;
-    	this.artifact=artifactId;
-    	this.parent = parentLoader;
-        this.exposure=exposure;
-        this.graph=exposure.getGraph();
-    	system = getSystemClassLoader();
         readConfigurations();
         addJarDeclaredDependencies();
 	}
@@ -567,8 +441,6 @@ class DependentLoaderImplementation extends DependentLoader {
     		return false;
     	}
     }.name("findResourceHunter");
-    
-    
 
     @Override
     public Enumeration<URL> findResources(String name) throws IOException {
@@ -607,8 +479,6 @@ class DependentLoaderImplementation extends DependentLoader {
     }.name("findResourcesHunter");
     
 
-    
-  
     @Override
     public URL getResource(String name) {
         // Search this jar
@@ -657,8 +527,12 @@ class DependentLoaderImplementation extends DependentLoader {
         }
     }
     
-    private InputStream superGetResourceAsStream(String name) {
-    	return super.getResourceAsStream(name);
+    private InputStream superGetResourceAsStream(String name){
+        try{
+            return feature.getResourceAsStream(artifact, name);
+        } catch (IOException e){
+            return null;
+        }
     }
 
     private Hunter<InputStream> resourceAsStreamHunter=new Hunter<InputStream>() {   	
@@ -747,8 +621,6 @@ class DependentLoaderImplementation extends DependentLoader {
     		return container[0]!=null;
 		}
     }.name("loadingHunter");
-
-    
     
 	private synchronized Class<?> shallowLoadClass(String name, boolean resolve){
     	
@@ -760,7 +632,7 @@ class DependentLoaderImplementation extends DependentLoader {
 
     		// (3) Load from this
     		try {
-				clazz = super.findClass(name);
+				clazz = findClassInFeature(name);
 				if (clazz != null){
 					resolveClass(clazz);    
 					return (clazz);
@@ -775,9 +647,53 @@ class DependentLoaderImplementation extends DependentLoader {
 				resolveClass(clazz);  
     	}
     }
-    
 
-    
+    /**
+     * Finds and loads the class with the specified name from the URL search
+     * path. Any URLs referring to JAR files are loaded and opened as needed
+     * until the class is found.
+     *
+     * @param name the name of the class
+     * @return the resulting class
+     * @exception ClassNotFoundException if the class could not be found,
+     *            or if the loader is closed.
+     * @exception NullPointerException if {@code name} is {@code null}.
+     */
+    protected Class<?> findClassInFeature(final String name)
+            throws ClassNotFoundException
+    {
+        final Class<?> result;
+        try {
+            result = AccessController.doPrivileged(
+                    new PrivilegedExceptionAction<>() {
+                        public Class<?> run() throws ClassNotFoundException {
+                            try {
+                            String path = name.replace('.', '/').concat(".class");
+                            var byteArray=feature.getResourceAsByteArray(artifact, path);
+                                if (byteArray != null) {
+                                    try{
+                                        return defineClass(name, byteArray, 0,byteArray.length);
+                                    } catch (Throwable t){
+                                        System.out.println(t.getMessage());
+                                        return null;
+                                    }
+                                } else {
+                                    return null;
+                                }
+                            } catch (IOException e) {
+                                return null;
+                            }
+                        }
+                    }, acc);
+        } catch (java.security.PrivilegedActionException pae) {
+            throw (ClassNotFoundException) pae.getException();
+        }
+        if (result == null) {
+            throw new ClassNotFoundException(name);
+        }
+        return result;
+    }
+
     /**
      * Finds the class with the given name if it has previously been
      * loaded and cached by this class loader, and return the Class object.
@@ -812,10 +728,10 @@ class DependentLoaderImplementation extends DependentLoader {
 
             DependentLoaderImplementation configuredLoader=configuredChildren.get(configName);
             DependentLoaderImplementation other=configuredLoader;
-            if(other==null)other=new DependentLoaderImplementation(artifact,this.getURLs(), exposure,parent);
+            if(other==null)other=new DependentLoaderImplementation(artifact, exposure,parent, feature, graph);
             other.setDependencies(this.dependencies);
             for(String dependency:config.get("dependency")){
-                DependentLoaderImplementation depLoder=graph.enshureJarLoaded(dependency);
+                DependentLoaderImplementation depLoder=graph.getLoader(new Artifact(dependency));
                 if(depLoder!=null){
                     other.addDependency(depLoder);
                 }
