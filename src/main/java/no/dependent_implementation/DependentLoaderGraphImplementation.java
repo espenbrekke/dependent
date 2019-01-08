@@ -37,6 +37,14 @@ class DependentLoaderGraphImplementation implements DependentLoaderGraph{
 		}
 	}
 
+	public Map<String, String> debugLoadingClassSegments=new HashMap<>();
+	public String[] debugLoadingArtifacts=new String[0];
+
+	public void debugLoading(String afact, String classSegment){
+        debugLoadingClassSegments.put(afact,classSegment);
+        debugLoadingArtifacts=Arrays.copyOf(debugLoadingArtifacts,debugLoadingArtifacts.length+1);
+        debugLoadingArtifacts[debugLoadingArtifacts.length-1]=afact;
+    }
 
 	public void addLoaderVisitor(DependentLoaderVisitor visitor){
 		DependentLoaderVisitor[] newVisitors=new DependentLoaderVisitor[visitors.length+1];
@@ -188,7 +196,17 @@ class DependentLoaderGraphImplementation implements DependentLoaderGraph{
 		    if(feature != null){
                 theLoader=new DependentLoaderImplementation(artifactId, exposed, parentLoader, featureManager.getFeature(artifactId), this);
 
+                if(debugLoadingArtifacts.length>0){
+                    String afString=theLoader.artifact.toString();
+                    for (int i = 0; i < debugLoadingArtifacts.length; i++) {
+                        if(afString.startsWith(debugLoadingArtifacts[i])){
+                            theLoader.debugLoading(debugLoadingClassSegments.get(debugLoadingArtifacts[i]));
+                        }
+                    }
+                }
                 setLoader(theLoader);
+
+                //extraDependencies.loaderAdded();
 
                 Artifact[] dependencies=feature.getDirectDependencies(theLoader.artifact);
 

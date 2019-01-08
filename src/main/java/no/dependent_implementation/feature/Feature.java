@@ -134,9 +134,15 @@ public class Feature {
         var prefix=prefixes.get(artifact);
         var jarEntry=jarFile.getJarEntry(prefix+name);
         if(jarEntry==null) return null;
+        byte[] readTo=new byte[(int)jarEntry.getSize()];
+        int bytesRead=0;
         var stream=jarFile.getInputStream(jarEntry);
         try{
-            return stream.readAllBytes();
+            while(bytesRead<readTo.length){
+                bytesRead=bytesRead+stream.read(readTo, bytesRead, readTo.length-bytesRead);
+            }
+
+            return readTo;
         } finally {
             if(stream!=null) stream.close();
         }

@@ -44,6 +44,13 @@ class DependentLoaderImplementation extends DependentLoader {
     protected ClassLoader parent = null;
     protected ClassLoader system = null;
 
+    private Throwable huntError=null;
+
+    private String debugLoadingClassSegment=null;
+    public void debugLoading(String classSegment){
+        debugLoadingClassSegment=classSegment;
+    }
+
     /* The context to be used when loading classes and resources */
     private final AccessControlContext acc;
 
@@ -594,6 +601,12 @@ class DependentLoaderImplementation extends DependentLoader {
     public synchronized Class<?> loadClass(String name, boolean resolve)  		
     		throws ClassNotFoundException {
         // (1) Check our previously loaded local class cache
+        if(debugLoadingClassSegment!=null){
+            if(name.contains(debugLoadingClassSegment)){
+                DependentMain.breakPoint("DependentLoaderImplementation.loadClass("+name+","+resolve+")");
+            }
+        }
+
         Class<?> clazz=findLoadedClass0(name);
         if (clazz != null) return clazz;
 
@@ -606,8 +619,9 @@ class DependentLoaderImplementation extends DependentLoader {
             rememberClass(name, container[0]);
             return container[0];
         };
-
-        throw new ClassNotFoundException(name+" Not visible from "+toString());
+        var e=new ClassNotFoundException(name+" Not visible from "+toString(), huntError);
+        huntError=null;
+        throw e;
     }
 
     private Hunter<Class<?>> loadingHunter=new Hunter<Class<?>>() {   	
@@ -623,7 +637,11 @@ class DependentLoaderImplementation extends DependentLoader {
     }.name("loadingHunter");
     
 	private synchronized Class<?> shallowLoadClass(String name, boolean resolve){
-    	
+        if(debugLoadingClassSegment!=null){
+            if(name.contains(debugLoadingClassSegment)){
+                DependentMain.breakPoint("DependentLoaderImplementation.shallowLoadClass("+name+","+resolve+")");
+            }
+        }
     	Class<?> clazz = null;
     	try {
     		// (2) Check our previously loaded class cache
@@ -662,6 +680,12 @@ class DependentLoaderImplementation extends DependentLoader {
     protected Class<?> findClassInFeature(final String name)
             throws ClassNotFoundException
     {
+        if(debugLoadingClassSegment!=null){
+            if(name.contains(debugLoadingClassSegment)){
+                DependentMain.breakPoint("DependentLoaderImplementation.findClassInFeature("+name+")");
+            }
+        }
+        Throwable[] gotErr={null};
         final Class<?> result;
         try {
             result = AccessController.doPrivileged(
@@ -671,16 +695,12 @@ class DependentLoaderImplementation extends DependentLoader {
                             String path = name.replace('.', '/').concat(".class");
                             var byteArray=feature.getResourceAsByteArray(artifact, path);
                                 if (byteArray != null) {
-                                    try{
-                                        return defineClass(name, byteArray, 0,byteArray.length);
-                                    } catch (Throwable t){
-                                        System.out.println(t.getMessage());
-                                        return null;
-                                    }
+                                    return defineClass(name, byteArray, 0,byteArray.length);
                                 } else {
                                     return null;
                                 }
-                            } catch (IOException e) {
+                            } catch (Throwable e) {
+                                gotErr[0]=e;
                                 return null;
                             }
                         }
@@ -689,7 +709,8 @@ class DependentLoaderImplementation extends DependentLoader {
             throw (ClassNotFoundException) pae.getException();
         }
         if (result == null) {
-            throw new ClassNotFoundException(name);
+            this.huntError=gotErr[0];
+            throw new ClassNotFoundException(name, gotErr[0]);
         }
         return result;
     }

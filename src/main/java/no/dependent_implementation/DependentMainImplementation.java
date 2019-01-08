@@ -215,6 +215,11 @@ public class DependentMainImplementation {
                     } else if (sCurrentLine.startsWith("dump")) {
                         String dumpFileName = sCurrentLine.replaceFirst("dump", " ").replaceFirst("\\s+", "");
                         loaderGraph.logGraph(dumpFileName);
+                    } else if (sCurrentLine.startsWith("debugloading")) {
+                        String debugLine = sCurrentLine.replaceFirst("debugloading", " ").replaceFirst("\\s+", "");
+                        String[] split=debugLine.split("\\s+");
+                        if(split.length>1) loaderGraph.debugLoading(split[0],split[1]);
+                        else loaderGraph.debugLoading(split[0],"");
                     } else if (sCurrentLine.startsWith("dependency")) {
                         String withoutDependency = sCurrentLine.replaceFirst("dependency", "").replaceFirst("\\s+", "");
                         String[] fromTo = withoutDependency.split("\\s", 2);
