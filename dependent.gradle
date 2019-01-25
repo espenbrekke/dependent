@@ -12,6 +12,7 @@ repositories {
 	}
 
 dependencies {
+    compile 'com.eclipsesource.minimal-json:minimal-json:0.9.5'
     compile group: 'org.eclipse.aether', name: 'aether-api', version:'1.1.0'
     compile group: 'org.eclipse.aether', name: 'aether-spi', version:'1.1.0'
     compile group: 'org.eclipse.aether', name: 'aether-util', version:'1.1.0'

@@ -1,6 +1,8 @@
 package no.dependent_implementation;
 
 import no.dependent.*;
+import no.dependent_implementation.circle.Circle;
+import no.dependent_implementation.circle.CircleScript;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -36,6 +38,7 @@ public class DependentFactoryImplementation extends DependentFactory {
         for (int i = 0; i < script.length; i++) {
             scriptAsList.add(script[i]);
         }
-        DependentMainImplementation.executeScript(scriptAsList, mainParams);
+        Circle executeCircle=new Circle("executecircle", null);
+        CircleScript.applyScript(executeCircle, scriptAsList,mainParams);
     };
 }

@@ -1,19 +1,13 @@
 package no.dependent_implementation;
 
 import java.io.File;
-import java.io.InputStream;
 import java.util.*;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipFile;
-
-import no.dependent.DependentLoaderConfiguration;
 
 import no.dependent.OutputBouble;
-import org.eclipse.aether.artifact.Artifact;
-import org.eclipse.aether.artifact.DefaultArtifact;
+
+import no.dependent.utils.Artifact;
 import org.eclipse.aether.graph.Dependency;
 import org.eclipse.aether.resolution.ArtifactDescriptorResult;
-import org.eclipse.aether.resolution.ArtifactResolutionException;
 import org.eclipse.aether.resolution.ArtifactResult;
 
 public class DependentRepositoryManager {
@@ -51,13 +45,13 @@ public class DependentRepositoryManager {
 		for(OutputBouble bouble:errorBoubles){
 			bouble.close();
 		}
-		OutputBouble.log1("unable to resolve artifact: " + artifact.getArtifactId());
+		OutputBouble.log1("unable to resolve artifact: " + artifact.id);
 		OutputBouble.log2("looked in:");
 		for(DependentRepository repo:lookedIn){
 			OutputBouble.log2(repo.toString());
 		}
 
-		throw new Exception("unable to resolve artifact: "+artifact.getArtifactId(), ex);
+		throw new Exception("unable to resolve artifact: "+artifact.id, ex);
 	}
 
     private ArtifactDescriptorResult getArtifactDescriptor(
@@ -107,7 +101,7 @@ public class DependentRepositoryManager {
 			OutputBouble.log2(repo.toString());
 		}
 
-		throw new Exception("Unable to describe artifact: "+artifact.getArtifactId(), ex);
+		throw new Exception("Unable to describe artifact: "+artifact.id, ex);
 	}
 
 	public Result<File> getLocalFile(Artifact artifact){
@@ -116,7 +110,7 @@ public class DependentRepositoryManager {
 //			Artifact artifact = new DefaultArtifact(artifactId );
 			ArtifactResult artifactResult;
 			artifactResult = resolveArtifact(artifact);
-	        Artifact describedArtifact=artifactResult.getArtifact();
+	        org.eclipse.aether.artifact.Artifact describedArtifact=artifactResult.getArtifact();
 	        return Result.res(describedArtifact.getFile());
 		} catch (Exception e) {
 			 return Result.error(e);
@@ -136,7 +130,7 @@ public class DependentRepositoryManager {
 			List<Artifact> retVal=new LinkedList<Artifact>();
 			for (Dependency dependency : dependencies) {
 				if(isRuntime(dependency) && !dependency.isOptional())
-					retVal.add(dependency.getArtifact());
+					retVal.add( new Artifact(dependency.getArtifact().toString()) );
 			}
 			return retVal;
 		} finally {
@@ -201,72 +195,4 @@ public class DependentRepositoryManager {
 		String[] retVal=new String[artifacts.size()];
 		return artifacts.toArray(retVal);
 	}
-
-	public void copy(String fromRepo,String toRepo,String filter, Boolean includeConfigDependencies) throws ArtifactResolutionException{
-		DependentRepository copyTo=null;
-		List<DependentRepository> copyFrom=new LinkedList();
-		for (int i = 0; i < repositories.length; i++) {
-			if(fromRepo.equals(repositories[i].name)) {
-				copyFrom.add(repositories[i]);
-			}
-			if(toRepo.equals(repositories[i].name)) {
-				copyTo=repositories[i];
-			}
-		}
-
-		if(copyTo==null){
-			OutputBouble.reportError(new IllegalArgumentException("Unknown repository: " + toRepo));
-		}
-		if(copyFrom.size()==0){
-			OutputBouble.reportError(new IllegalArgumentException("Unknown repository: " + fromRepo));
-		}
-		if(copyTo==null || copyFrom.size()==0){
-			return;
-		}
-
-		for(DependentRepository fromThis:copyFrom){
-			String[] fromArtifacts=fromThis.listArtifacts();
-			for(String singleArtifact:fromArtifacts){
-				Artifact artifact=new DefaultArtifact(singleArtifact);
-				if(singleArtifact.startsWith(filter)){
-					ArtifactResult result=copyTo.resolveArtifactFrom(artifact, fromThis);
-					if(includeConfigDependencies){
-						File artifactFile=result.getArtifact().getFile();
-						if(artifactFile!=null && artifactFile.exists() && artifactFile.getName().endsWith("jar")){
-							ZipFile zf=null;
-							InputStream dependentInputStream=null;
-							try{
-								zf=new ZipFile(artifactFile);
-								ZipEntry dependentEntry=zf.getEntry("dependent.conf");
-								dependentInputStream=zf.getInputStream(dependentEntry);
-
-								Map<String,DependentLoaderConfiguration> confs=DependentLoaderImplementation.parseConfig(dependentInputStream);
-								for(DependentLoaderConfiguration conf:confs.values()){
-									for(String dependency:conf.get("dependency")){
-										try{
-											Artifact dependencyArtifact=new DefaultArtifact(dependency);
-											this.resolveArtifact(dependencyArtifact);
-										} catch (Throwable t) {
-											OutputBouble.reportError(t);
-										}
-									}
-								}
-							} catch (Throwable t) {
-								OutputBouble.reportError(t);
-							} finally{
-								try{
-									if(zf!=null) zf.close();
-									if(dependentInputStream!=null) dependentInputStream.close();
-								} catch (Throwable t) {
-									OutputBouble.reportError(t);
-								}
-							}
-						}
-					}
-				}
-			}
-		}
-
-	}
-
 }

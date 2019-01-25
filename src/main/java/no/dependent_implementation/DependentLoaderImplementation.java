@@ -1,23 +1,24 @@
 package no.dependent_implementation;
 
+import no.dependent.DependentLoader;
+import no.dependent.DependentLoaderConfiguration;
+import no.dependent.OutputBouble;
+import no.dependent.utils.Artifact;
+
 import java.io.*;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.nio.file.*;
+import java.nio.file.FileVisitResult;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
-import no.dependent.DependentLoader;
-import no.dependent.DependentLoaderConfiguration;
-import no.dependent.DependentLoaderGraph;
-import no.dependent.OutputBouble;
-import org.eclipse.aether.artifact.Artifact;
-import org.eclipse.aether.artifact.DefaultArtifact;
-
-class DependentLoaderImplementation extends DependentLoader {
+public class DependentLoaderImplementation extends DependentLoader {
     private int loaderId=DependentLoaderGraphImplementation.getNewLoaderId();
 
     public String tag="";
@@ -31,7 +32,7 @@ class DependentLoaderImplementation extends DependentLoader {
     }
 
     public boolean inQuarantine=false;
-	
+
 	public final Artifact artifact;
     public String getArtifact(){
         return artifact.toString();
@@ -133,7 +134,7 @@ class DependentLoaderImplementation extends DependentLoader {
     }
 
 	private final  Exposure exposure;
-	
+
 	protected ClassLoader proxyFor = null;
 	protected ClassLoader parent = null;
     protected ClassLoader system = null;
@@ -144,7 +145,7 @@ class DependentLoaderImplementation extends DependentLoader {
     }
 
 
-    protected DependentLoaderImplementation[] dependencies=new DependentLoaderImplementation[0];
+    public DependentLoaderImplementation[] dependencies=new DependentLoaderImplementation[0];
 
     protected String[] libraryPaths = new String[0];
 
@@ -188,10 +189,10 @@ class DependentLoaderImplementation extends DependentLoader {
         newDependencies[newDependencies.length-1]=toLoaderImplementation;
         dependencies=newDependencies;
     }
-    
+
     public DependentLoaderImplementation addJarFileDependency(String artifact,URL jarFile) {
 
-        Artifact checkedArtifact=new DefaultArtifact(artifact);
+        Artifact checkedArtifact=new Artifact(artifact);
         for (DependentLoaderImplementation existing : dependencies) {
             if(existing.artifact.equals(checkedArtifact)) return null;
         }
@@ -207,12 +208,12 @@ class DependentLoaderImplementation extends DependentLoader {
 		File p = new File(path,libName+".dll");
 		if(p.exists()){
 			return p.getAbsolutePath();
-		} 
+		}
 		p = new File(path, libName+ ".so");
 		if(p.exists()){
 			return p.getAbsolutePath();
-		} 
-		
+		}
+
 		File[] list = new File(path).listFiles();
 		for(File dir : list) {
 			if(dir.isDirectory()) {
@@ -227,7 +228,7 @@ class DependentLoaderImplementation extends DependentLoader {
 		}
 		return null;
     }
-    
+
     @Override
     protected String findLibrary(String libName) {
     	for (String path : libraryPaths) {
@@ -238,26 +239,26 @@ class DependentLoaderImplementation extends DependentLoader {
     	}
     	return super.findLibrary(libName);
     }
-    
+
 
     public DependentLoaderImplementation quarantine(){
     	inQuarantine=true;
     	return this;
     }
-    
+
 	static  boolean bDebugHuntOutput=false;
-    
+
     /**
      * The cache of ResourceEntry for classes and resources we have loaded,
      * keyed by resource name.
      */
     protected Map<String, Class<?>> classCache = new ConcurrentHashMap<>();
-    
+
     public String toString(){
         URL[] utls=getURLs();
     	return "DependentLoader("+artifact.toString()+ " at "+ (utls.length>0?utls[0]:" nowere")+")"+tag ;
     }
-    
+
     /**
      * The list of not found resources.
      */
@@ -280,7 +281,7 @@ class DependentLoaderImplementation extends DependentLoader {
         }
 		public abstract boolean hunt(String prey, ClassLoader field, boolean isDependent, T[] container) throws ClassNotFoundException;
     }
-    
+
     private <T> boolean  hunt(String prey, Hunter<T> hunter, T[] container){
         if(proxyFor!=null){
         	try {
@@ -325,13 +326,13 @@ class DependentLoaderImplementation extends DependentLoader {
 
         return false;
     }
-    
+
     private boolean huntNoParent(String prey, Hunter hunter, Object[] container, BitSet cuttof){
     	if(cuttof.get(loaderId)){
     		return false;
     	}
         cuttof.set(loaderId);
-    	
+
     	if(proxyFor!=null){
         	try {
         		if(hunter.hunt(prey,proxyFor,false, container)){
@@ -341,7 +342,7 @@ class DependentLoaderImplementation extends DependentLoader {
 				//ignore
 			}
     	}
-    	
+
         // then Check this
         try {
 			if(hunter.hunt(prey,this,true, container)){
@@ -350,7 +351,7 @@ class DependentLoaderImplementation extends DependentLoader {
 		} catch (Throwable e) {
 			//Ignore
 		}
-        
+
         // (2) Search dependencies
         for (DependentLoaderImplementation dependentLoader : dependencies) {
        		if(dependentLoader.huntNoParent(prey,hunter, container,cuttof)){
@@ -377,16 +378,7 @@ class DependentLoaderImplementation extends DependentLoader {
                 urls[i]=file.toURI().toURL();
                 i++;
             }
-            Artifact af=null;
-            try{
-                String[] split=artifact.split(":",3);
-                if(split.length==3)  af=new DefaultArtifact(artifact);
-                else if(split.length==2)  af=new DefaultArtifact(split[0],split[1],"jar","?");
-                else if(split.length==1)  af=new DefaultArtifact(split[0],"unknown","jar","?");
-                else af=new DefaultArtifact("no.dbwatch.unnamed:unnamed_artifact:1");
-            } catch (Exception e){
-                //   e.printStackTrace();
-            }
+            Artifact af=new Artifact(artifact);
             DependentLoaderImplementation loader = new DependentLoaderImplementation(af,urls , exposure, parentLoader);
 
             return loader;
@@ -404,10 +396,9 @@ class DependentLoaderImplementation extends DependentLoader {
         this.exposure=exposure;
         this.graph=exposure.getGraph();
         system = getSystemClassLoader();
-        readConfigurations();
         addJarDeclaredDependencies();
 	}
-    
+
 	public DependentLoaderImplementation(Artifact artifact, URL jarUrl, Exposure exposure, ClassLoader parentLoader) {
         super(wrap(jarUrl), parentLoader);
         this.artifact=artifact;
@@ -415,7 +406,6 @@ class DependentLoaderImplementation extends DependentLoader {
         this.exposure=exposure;
         this.graph=exposure.getGraph();
         system = getSystemClassLoader();
-        readConfigurations();
         addJarDeclaredDependencies();
 	}
 
@@ -426,20 +416,18 @@ class DependentLoaderImplementation extends DependentLoader {
         this.exposure=exposure;
         this.graph=exposure.getGraph();
         system = getSystemClassLoader();
-        readConfigurations();
         addJarDeclaredDependencies();
 	}
 
 	public DependentLoaderImplementation(Artifact artifactId, ClassLoader delegate, Exposure exposure, ClassLoader parentLoader) {
     	super(new URL[0], parentLoader);
-           	
+
     	this.proxyFor=delegate;
     	this.artifact=artifactId;
     	this.parent = parentLoader;
         this.exposure=exposure;
         this.graph=exposure.getGraph();
     	system = getSystemClassLoader();
-        readConfigurations();
         addJarDeclaredDependencies();
 	}
 
@@ -472,62 +460,6 @@ class DependentLoaderImplementation extends DependentLoader {
         return;
     }
 
-    private void readConfigurations(){
-        InputStream conf=null;
-        try{
-            conf=this.getResourceAsStream("dependent.conf");
-            if(conf!=null) configs=parseConfig(conf);
-        } finally {
-            try{
-                if(conf!=null) conf.close();
-            } catch (Throwable t){
-
-            }
-        }
-    }
-
-    public static Map<String,DependentLoaderConfiguration> parseConfig(InputStream conf) {
-        int currentConf=0;
-        Map<String,DependentLoaderConfiguration> result=new HashMap<String,DependentLoaderConfiguration>();
-        if(conf != null){
-            try{
-                BufferedReader ds = new BufferedReader(new InputStreamReader(conf, "UTF-8"));
-                String line;
-                while ((line = ds.readLine()) != null) // read a line, assign to c, then compare the new value of c to null
-                {
-                    String sCurrentLine= DependentMainImplementation.props.replaceProperties(line);
-
-                    String[] lineSplit=sCurrentLine.split("=", 2);
-                    if(lineSplit.length==2){
-                        int lastDot=lineSplit[0].lastIndexOf('.');
-                        String configName="";
-                        String property="";
-                        if(lastDot==-1){
-                            property=lineSplit[0];
-                        } else {
-                            configName=lineSplit[0].substring(0,lastDot);
-                            property=lineSplit[0].substring(lastDot+1);
-                        }
-                        if("_".equals(configName)){
-                            currentConf++;
-                            configName=Integer.toString(currentConf);
-                        } else if("|".equals(configName)){
-                            configName=Integer.toString(currentConf);
-                        }
-
-                        String value=lineSplit[1];
-
-                        DependentLoaderConfiguration changeThis=result.get(configName);
-                        if(changeThis==null)changeThis=new DependentLoaderConfiguration(configName);
-                        result.put(configName, changeThis.add(property,value.trim().replace("\"","")));
-                    }
-                }
-            } catch (Exception e){
-
-            }
-        }
-        return result;
-    }
 
     private void addJarDeclaredDependencies(){
         DependentLoaderConfiguration defaultConf=configs.get("");
@@ -572,8 +504,8 @@ class DependentLoaderImplementation extends DependentLoader {
     		return false;
     	}
     }.name("findResourceHunter");
-    
-    
+
+
 
     @Override
     public Enumeration<URL> findResources(String name) throws IOException {
@@ -588,14 +520,14 @@ class DependentLoaderImplementation extends DependentLoader {
     public Enumeration<URL> superFindResources(String name) throws IOException {
         return super.findResources(name);
     }
-    
-    private Hunter<Vector<URL>> findResourcesHunter=new Hunter<Vector<URL>>() {   	
+
+    private Hunter<Vector<URL>> findResourcesHunter=new Hunter<Vector<URL>>() {
     	@Override
     	public boolean hunt(String name,ClassLoader loader, boolean isDependent, Vector<URL>[] container) throws ClassNotFoundException {
     		if(!isDependent){
     			return false;
-    		} 
-    		
+    		}
+
     		Enumeration<URL> otherResourcePaths;
 			try {
 				otherResourcePaths = ((DependentLoaderImplementation)loader).superFindResources(name);
@@ -610,10 +542,10 @@ class DependentLoaderImplementation extends DependentLoader {
     		return false;
     	}
     }.name("findResourcesHunter");
-    
 
-    
-  
+
+
+
     @Override
     public URL getResource(String name) {
         // Search this jar
@@ -629,7 +561,7 @@ class DependentLoaderImplementation extends DependentLoader {
     	return super.getResource(name);
     }
 
-    private Hunter<URL> resourceHunter=new Hunter<URL>() {   	
+    private Hunter<URL> resourceHunter=new Hunter<URL>() {
     	@Override
     	public boolean hunt(String name,ClassLoader loader, boolean isDependent, URL[] container) throws ClassNotFoundException {
     		if(!isDependent){
@@ -640,9 +572,9 @@ class DependentLoaderImplementation extends DependentLoader {
     		return container[0]!=null;
     	}
     }.name("resourceHunter");
-    
 
-    
+
+
     /**
      * Find the resource with the given name, and return an input stream
      * that can be used for reading it.  The search order is as described
@@ -661,15 +593,15 @@ class DependentLoaderImplementation extends DependentLoader {
             return null;
         }
     }
-    
+
     private InputStream superGetResourceAsStream(String name) {
     	return super.getResourceAsStream(name);
     }
 
-    private Hunter<InputStream> resourceAsStreamHunter=new Hunter<InputStream>() {   	
+    private Hunter<InputStream> resourceAsStreamHunter=new Hunter<InputStream>() {
 		@Override
 		public boolean hunt(String name,ClassLoader loader, boolean isDependent, InputStream[] container) throws ClassNotFoundException {
-			
+
 			if(!isDependent){
         		container[0]=loader.getResourceAsStream(name);
         		return container[0]!=null;
@@ -695,7 +627,7 @@ class DependentLoaderImplementation extends DependentLoader {
 
     }
 
-    
+
     /**
      * Load the class with the specified name, searching using the following
      * algorithm until it finds and returns the class.  If the class cannot
@@ -722,7 +654,7 @@ class DependentLoaderImplementation extends DependentLoader {
      * @exception ClassNotFoundException if the class was not found
      */
     @Override
-    public synchronized Class<?> loadClass(String name, boolean resolve)  		
+    public synchronized Class<?> loadClass(String name, boolean resolve)
     		throws ClassNotFoundException {
         // (1) Check our previously loaded local class cache
         Class<?> clazz=findLoadedClass0(name);
@@ -741,7 +673,7 @@ class DependentLoaderImplementation extends DependentLoader {
         throw new ClassNotFoundException(name+" Not visible from "+toString());
     }
 
-    private Hunter<Class<?>> loadingHunter=new Hunter<Class<?>>() {   	
+    private Hunter<Class<?>> loadingHunter=new Hunter<Class<?>>() {
 		@Override
 		public boolean hunt(String name,ClassLoader loader, boolean isDependent, Class<?>[] container) throws ClassNotFoundException {
 			if(!isDependent){
@@ -753,10 +685,10 @@ class DependentLoaderImplementation extends DependentLoader {
 		}
     }.name("loadingHunter");
 
-    
-    
+
+
 	private synchronized Class<?> shallowLoadClass(String name, boolean resolve){
-    	
+
     	Class<?> clazz = null;
     	try {
     		// (2) Check our previously loaded class cache
@@ -767,24 +699,25 @@ class DependentLoaderImplementation extends DependentLoader {
     		try {
 				clazz = super.findClass(name);
 				if (clazz != null){
-					resolveClass(clazz);    
+					resolveClass(clazz);
 					return (clazz);
 				}
 			} catch (Throwable e) {
 				//Ignore
 			}
-    		
+
     		return null;
     	} finally {
 			if (clazz!=null && resolve)
-				resolveClass(clazz);  
+				resolveClass(clazz);
     	}
     }
-    
 
-    
+
+
     /**
      * Finds the class with the given name if it has previously been
+     * loaded and cached by this class loader, and return the Class object.
      * loaded and cached by this class loader, and return the Class object.
      * If this class has not been cached, return <code>null</code>.
      *

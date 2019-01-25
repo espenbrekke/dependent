@@ -5,7 +5,7 @@ import no.dependent.OutputBouble;
 
 import java.lang.reflect.Method;
 
-class ToRun{
+public class ToRun extends Thread{
     public ToRun(String method, DependentLoader loader){
         this.loader=(DependentLoaderImplementation)loader;
         this.method=method;
@@ -28,6 +28,7 @@ class ToRun{
         mainParams=newArray;
     }
 
+    @Override
     public void run() {
         try {
             int lastDotIndex=method.lastIndexOf(".");
@@ -42,5 +43,4 @@ class ToRun{
             OutputBouble.reportError(e);
         }
     }
-
 }

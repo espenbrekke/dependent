@@ -1,10 +1,11 @@
 package no.dependent_implementation;
 
 import no.dependent.OutputBouble;
+import no.dependent.utils.Artifact;
 import no.dependent_implementation.utils.Booter;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
-import org.eclipse.aether.artifact.Artifact;
+import org.eclipse.aether.artifact.DefaultArtifact;
 import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.resolution.*;
 
@@ -33,7 +34,7 @@ public class DependentRepository {
 
     public boolean canResolve(Artifact artifact){
         if("".equals(groupFilter)) return true;
-        return artifact.getGroupId().startsWith(groupFilter);
+        return artifact.group.startsWith(groupFilter);
     }
 
     public DependentRepository(File root, String artifactsourceUrl,String name, String groupFilter, String[] tagsRepoPolicy){
@@ -52,7 +53,7 @@ public class DependentRepository {
 
     public ArtifactResult resolveArtifact(Artifact artifact) throws ArtifactResolutionException {
         ArtifactRequest artifactRequest = new ArtifactRequest();
-        artifactRequest.setArtifact( artifact );
+        artifactRequest.setArtifact(new DefaultArtifact( artifact.asString() ) );
 
         ArtifactResult artifactResult=null;
         if(remoteRepository!=null){
@@ -78,7 +79,7 @@ public class DependentRepository {
 
     public ArtifactResult resolveArtifactFrom(Artifact artifact, DependentRepository from) throws ArtifactResolutionException {
         ArtifactRequest artifactRequest = new ArtifactRequest();
-        artifactRequest.setArtifact(artifact);
+        artifactRequest.setArtifact(new DefaultArtifact( artifact.asString() ) );
         artifactRequest.addRepository(from.asRemote());
 
         ArtifactResult artifactResult = system.resolveArtifact(session, artifactRequest);
@@ -88,7 +89,7 @@ public class DependentRepository {
     public ArtifactDescriptorResult getArtifactDescriptor(
             Artifact artifact) throws ArtifactDescriptorException {
         ArtifactDescriptorRequest descriptorRequest = new ArtifactDescriptorRequest();
-        descriptorRequest.setArtifact( artifact );
+        descriptorRequest.setArtifact( new DefaultArtifact( artifact.asString() )  );
 
         if(remoteRepository!=null){
             descriptorRequest.addRepository(remoteRepository);

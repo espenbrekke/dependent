@@ -8,16 +8,34 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Map;
 import java.util.Properties;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class PropertiesEngine {
+    final PropertiesEngine outer;
+
+    public PropertiesEngine(){
+        outer=null;
+
+        props.setProperty("win_app_data", getAppData());
+        props.setProperty("starttime", Long.toString(System.currentTimeMillis()));
+        for (Map.Entry<String,String> envEntry:System.getenv().entrySet()) {
+            props.setProperty("env."+envEntry.getKey(),envEntry.getValue());
+        }
+
+        for (String name:System.getProperties().stringPropertyNames()) {
+            props.setProperty(name,System.getProperty(name));
+        }
+    }
+
+    public PropertiesEngine(PropertiesEngine outer){
+        this.outer=outer;
+    }
+
 	private static final Pattern PATTERN = compile("\\$\\{(.+?)\\}");
 	private Properties props=new Properties();
-    {
-        props.setProperty("win_app_data", getAppData());
-    }
 
 	public String replaceProperties(String line) {
 		return replace(line);
@@ -55,7 +73,9 @@ public class PropertiesEngine {
     private String getProperty(String key){
         if(props.containsKey(key)){
             return props.getProperty(key);
-        } else{
+        } else if(outer!=null) {
+            return outer.getProperty(key);
+        } else {
             Properties sysp=System.getProperties();
             if(sysp.containsKey(key)){
                 return sysp.getProperty(key);
