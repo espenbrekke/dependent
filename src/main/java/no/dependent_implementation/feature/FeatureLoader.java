@@ -2,6 +2,7 @@ package no.dependent_implementation.feature;
 
 import no.dependent.OutputBouble;
 import no.dependent.utils.Artifact;
+import sun.misc.Resource;
 
 import java.io.File;
 import java.io.IOException;
@@ -14,24 +15,26 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.security.AccessController;
+import java.security.PrivilegedExceptionAction;
 import java.util.*;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
-public class DependentFeatureLoader extends URLClassLoader {
+public class FeatureLoader extends CopiedUrlClassLoader {
     public final Artifact artifact;
     public FeatureLayout featureLayout=FeatureLayout.namedDirectories;
 
-    public DependentFeatureLoader(FeatureListing listing){
+    public FeatureLoader(FeatureListing listing){
         super(wrap(listing.url));
         artifact=listing.id;
     }
 
-    public DependentFeatureLoader(Artifact artifact, File featureFile) throws MalformedURLException {
+    public FeatureLoader(Artifact artifact, File featureFile) throws MalformedURLException {
         this(artifact, featureFile.toPath().toUri().toURL());
     }
 
-    public DependentFeatureLoader(Artifact artifact, URL featureUrl){
+    public FeatureLoader(Artifact artifact, URL featureUrl){
         super(wrap(featureUrl));
         this.artifact=artifact;
     }
@@ -46,7 +49,7 @@ public class DependentFeatureLoader extends URLClassLoader {
                     File asFile = new File(url.toURI());
                     if (asFile.isDirectory()) {
                         try {
-                            Files.walkFileTree(asFile.toPath(), new DependentFeatureLoader.AddStringVisitor(asFile, newEntries));
+                            Files.walkFileTree(asFile.toPath(), new FeatureLoader.AddStringVisitor(asFile, newEntries));
                         } catch (Exception e) {
                             OutputBouble.reportError(e);
                         }
@@ -150,5 +153,17 @@ public class DependentFeatureLoader extends URLClassLoader {
 
     public List<Artifact> getDependencies(){
         return new ArrayList<Artifact>();
+    }
+
+    protected Resource findClassResourceAsResource(String name){
+        String path = name.replace('.', '/').concat(".class");
+        Resource res = ucp.getResource(path, false);
+        return res;
+    }
+
+    protected Resource findResourceAsResource(String name){
+        String path = name;
+        Resource res = ucp.getResource(path, false);
+        return res;
     }
 }

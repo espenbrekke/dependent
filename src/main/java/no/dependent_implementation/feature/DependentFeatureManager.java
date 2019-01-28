@@ -10,10 +10,10 @@ public class DependentFeatureManager {
     public void addFeatureStore(String featureStore){
         repositoryList.add(new FeatureRepository(featureStore));
     }
-    public DependentFeatureLoader getFeature(Artifact featureId){
+    public FeatureLoader getFeature(Artifact featureId){
         FeatureListing getThis=getFeatureListing(featureId);
         if(getThis==null)return null;
-        return new DependentFeatureLoader(getThis);
+        return new FeatureLoader(getThis);
     }
 
     private FeatureListing getFeatureListing(Artifact featureId){

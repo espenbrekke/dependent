@@ -2,13 +2,12 @@ package no.dependent_implementation.circle;
 
 import no.dependent.utils.Artifact;
 import no.dependent_implementation.feature.DependencyResolutionExeption;
-import no.dependent_implementation.feature.DependentFeatureLoader;
+import no.dependent_implementation.feature.FeatureLoader;
 import no.dependent_implementation.feature.DependentFeatureManager;
 import no.dependent_implementation.DependentLoaderGraphImplementation;
 import no.dependent_implementation.DependentRepositoryManager;
 import no.dependent_implementation.PropertiesEngine;
 
-import java.io.InputStream;
 import java.util.*;
 
 public class Circle {
@@ -45,17 +44,17 @@ public class Circle {
 
     public static void create(Circle outerCircle, Artifact feature, String entrypoint) throws Exception{
         Circle newCircle=new Circle(entrypoint, outerCircle);
-        DependentFeatureLoader definingFeature=newCircle.loadDefiningFeatures(feature);
+        FeatureLoader definingFeature=newCircle.loadDefiningFeatures(feature);
 
     }
 
-    private DependentFeatureLoader[] definingFeatures=null;
+    private FeatureLoader[] definingFeatures=null;
 
-    private DependentFeatureLoader loadDefiningFeatures(Artifact feature) throws Exception{
+    private FeatureLoader loadDefiningFeatures(Artifact feature) throws Exception{
         if(definingFeatures!=null) throw new IllegalAccessException("defining features may only be written once");
-        ArrayList<DependentFeatureLoader> output=new ArrayList<DependentFeatureLoader>();
-        Map<Artifact, DependentFeatureLoader> definingFeaturesMap=new HashMap<Artifact,DependentFeatureLoader>();
-        DependentFeatureLoader foundIt=featureManager.getFeature(feature);
+        ArrayList<FeatureLoader> output=new ArrayList<FeatureLoader>();
+        Map<Artifact, FeatureLoader> definingFeaturesMap=new HashMap<Artifact, FeatureLoader>();
+        FeatureLoader foundIt=featureManager.getFeature(feature);
         LinkedList<Artifact> dependencies=new LinkedList<>();
         if(foundIt!=null){
             output.add(foundIt);
@@ -65,7 +64,7 @@ public class Circle {
             while(!dependencies.isEmpty()){
                 Artifact lookFor=dependencies.pop();
                 if(definingFeaturesMap.get(lookFor)==null){
-                    DependentFeatureLoader dependency=featureManager.getFeature(lookFor);
+                    FeatureLoader dependency=featureManager.getFeature(lookFor);
                     if(dependency==null) throw new DependencyResolutionExeption("In "+name+": Unable to resolve feature dependency: "+dependency);
 
                     output.add(dependency);
@@ -74,7 +73,7 @@ public class Circle {
                 }
             }
 
-            definingFeatures=output.toArray(new DependentFeatureLoader[output.size()]);
+            definingFeatures=output.toArray(new FeatureLoader[output.size()]);
             return foundIt;
         } else return null;
     };
